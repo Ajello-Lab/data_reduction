@@ -27,9 +27,9 @@ Click on green drop-down button at top right labeled "Clone or Download" and the
 
 # Using the software
 
-If using the IDL development environment, it is recommended to add the \'tools\' path as a Project.
+If using the IDL development environment, it is recommended to add the \'data_reduction\' path as a Project.
 
-Before using any software, first edit the routine \'ajello_lab_set_paths\' and create a new entry for the user and local location of the data.  This will define a system variable called \'!UVIS_PATH\' that is used by the code to locate other routines and support files.  Now run the routine.
+Before using any software, first edit the routine \'ajello_lab_set_paths\' and create a new entry for the user and local location of the data.  This will define a system variable called \'!path_base\' pointing to this location and used by the routines.  Now run the \'ajello_lab_set_paths\'.
 
 # Useful References
 
