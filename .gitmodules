@@ -1,0 +1,3 @@
+[submodule "IDLAstro"]
+	path = IDLAstro
+	url = https://github.com/wlandsman/IDLAstro
