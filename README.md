@@ -23,7 +23,7 @@ git submodule update
 ```
 ## 2. Method 2 - Download zip file
 
-Click on green drop-down button at top right labeled "Clone or Download" and then click on "zip file".  
+Click on green drop-down button at top right labeled "Code" and then click on "zip file".  
 
 # Using the software
 
