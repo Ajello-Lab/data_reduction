@@ -11,7 +11,7 @@
 ; OUTPUTS:
 ; none.
 ;-
-pro ajello_lab_set_paths
+pro ajello_lab_set_paths, path_base
 
 ;  defsysv,'!path_data',exists=exists1
 ;  defsysv,'!path_data2',exists=exists2

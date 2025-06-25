@@ -53,6 +53,15 @@ pro ajello_lab_image_summary_rot, file, win, yr=yr_spec
   ; Read in the processed data.
   ;
   restore,file
+  
+  ;
+  ; some data was acquired a different integration time thant the standard 60 sec
+  ; this will normalize the data to the equivalent DN in a 60 sec period 
+  ;
+  arr           *= 60./int_time
+  sig_light     *= 60./int_time
+  sig_dark      *= 60./int_time
+  arr_dark_avg  *= 60./int_time
 
   wl_param = linfit( wl, findgen(1024) )
   y_param = linfit( yspa, findgen(1024) )
@@ -76,8 +85,8 @@ pro ajello_lab_image_summary_rot, file, win, yr=yr_spec
 ;  mn_diff = mean(arr[x1:x2,*])
 ;  sd_diff = stddev(arr[x1:x2,*])
 
-  mn_diff = mean(arr[*,yr_spec[0]:yr_spec[1]])
-  sd_diff = stddev(arr[*,yr_spec[0]:yr_spec[1]])
+  mn_diff =   mean(arr[*,yr_spec[0]:yr_spec[1]],/nan)
+  sd_diff = stddev(arr[*,yr_spec[0]:yr_spec[1]],/nan)
 
   font_name = 'Courier'
   
@@ -97,8 +106,8 @@ pro ajello_lab_image_summary_rot, file, win, yr=yr_spec
   ;
 ;  spec_mean = mean( arr[x1:x2,*], dimension=1 )  ; for original image
 ;  spat_mean = mean( arr         , dimension=2 )  ; for original image
-  spec_mean = mean( arr[*,yr_spec[0]:yr_spec[1]], dimension=2 )  ; for rotated image
-  spat_mean = mean( arr         , dimension=1 )  ; for rotated image
+  spec_mean = mean( arr[*,yr_spec[0]:yr_spec[1]], dimension=2, /nan )  ; for rotated image
+  spat_mean = mean( arr                         , dimension=1, /nan )  ; for rotated image
   
   win = window(dimensions=[800,800])
   minval = mn_diff-sd_diff
@@ -146,16 +155,16 @@ pro ajello_lab_image_summary_rot, file, win, yr=yr_spec
   formath = '(A10,A7,  A7,  A7)'
   format =  '(A10,F7.1,F7.1,F7.1)'
   desch = string('(DN)', 'max', 'min', 'diff', format=formath)
-  desc1 = string( 'Sig_light', max(sig_light_avg), min(sig_light_avg), max(sig_light_avg)-min(sig_light_avg), format=format )
-  desc2 = string( ' Sig_dark', max(sig_dark_avg) , min(sig_dark_avg) , max(sig_dark_avg) - min(sig_dark_avg), format=format )
+  desc1 = string( 'Sig_light', max(sig_light_avg,/nan), min(sig_light_avg,/nan), max(sig_light_avg,/nan)-min(sig_light_avg,/nan), format=format )
+  desc2 = string( ' Sig_dark', max(sig_dark_avg,/nan) , min(sig_dark_avg,/nan) , max(sig_dark_avg,/nan) - min(sig_dark_avg,/nan), format=format )
   desc = desch + '!C' + desc1 + '!C' + desc2
   text_sigtable = text( 0.60, p0-pd*5, desc, font_name=font_name )
   ;
-  text_darkavg = text( 0.65, p0-pd*8, 'dark_avg (DN) = '+string(mean(arr_dark_Avg),format='(F7.1)'), font_name=font_name )
-  t2ext_darksdv = text( 0.65, p0-pd*9, '    _sdv (DN) = '+string(stddev(arr_dark_Avg),format='(F7.1)'), font_name=font_name )
+  text_darkavg = text( 0.65, p0-pd*8, 'dark_avg (DN) = '+string(mean(arr_dark_Avg,/nan),format='(F7.1)'), font_name=font_name )
+  text_darksdv = text( 0.65, p0-pd*9, '    _sdv (DN) = '+string(stddev(arr_dark_Avg,/nan),format='(F7.1)'), font_name=font_name )
   ;
   ;
-  text_maxsignal = text( 0.65, p0-pd*12, 'Max signal (DN) = '+string(max(arr),format='(I5)'), font_name=font_name )
+  text_maxsignal = text( 0.65, p0-pd*12, 'Max signal (DN) = '+string(max(arr,/nan),format='(I5)'), font_name=font_name )
   ;
   text_numlight = text( 0.65, p0-pd*14, 'Num_light = '+string(n_elements(temp_light),format='(I3)'), font_name=font_name )
   text_numdark = text( 0.65, p0-pd*15, ' Num_dark = '+string(n_elements(temp_dark),format='(I3)'), font_name=font_name )
