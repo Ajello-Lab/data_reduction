@@ -5,7 +5,7 @@ pro iuvs_test_github
   file = "\\lasp-store\home\lufa5942\Documents\IUVS\N2_100EV_FUV_TEST21_IMAGE2_HIPRESS.idl"
   restore, file, /ver
 
-  im = image( arr, min_value=0, max_value=100 )
+  im = image( arr, min_value=0, max_value=100, title='processsed image' )
 
 
   y1 = 150
