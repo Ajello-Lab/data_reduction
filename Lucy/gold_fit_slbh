@@ -1,0 +1,73 @@
+
+; pro 1 ****************************
+
+pro iuvs_psf_model,x,a,f
+  f = A[0] * exp( -0.5 * (x-A[1])^2 / A[2]^2 )
+end
+
+; func 1 ***************************
+
+FUNCTION MYFUNCT, p,dp, X=x, Y=y, ERR=err
+  
+  v=[0.0710558,     0.133515,     0.162337,     0.170232,     0.159273,     0.109679,    0.0719076]; vib pop of may 14-16 13-17 UT 60-70sza
+  aa=slbh2(p[0],x,population_in=v)
+  shp=size(aa)
+  model=fltarr(shp[1])
+  A=[1, 0, 0.80,       22.9622]
+ 
+  ;apply psf and sum over different vibrational spectra
+  for w=0, shp[1]-1 do begin;all wl
+    for n=0,shp[2]-1 do begin
+      a[0]=aa[w,n]
+      a[1]=x[w]
+      iuvs_psf_model,x+0,a,f
+      ;print, size(f)
+      model=model+f
+    endfor
+  endfor
+  
+  iidx=where((x gt 1490.5) and (x lt 1498.0))
+  model[iidx]=0.0D
+  ndx_138 = where( x gt 1383.0-10.0 and x lt 1388.0+10.0 )
+  sens1d,(x/10.0),sens
+  modeln=model*sens*p[1]
+  cgplot,x,modeln,color='red'
+  cgplot,x,y,/over
+  
+  if n_params() GT 1 then begin
+    ; Create derivative and compute derivative array
+    requested = dp ; Save original value of DP
+    dp = make_array(n_elements(x), n_elements(p), value=x[0]*0)
+    ; Compute derivative if requested by caller
+    for i = 0, n_elements(p)-1 do if requested(i) NE 0 then $
+      dp(*,i) = FGRAD(x, p, i)
+  endif
+  return,modeln
+end
+
+; read in data *************************
+
+pathh=''
+dat=read_ascii(pathh)
+rdat=dat.FIELD001
+
+
+
+
+; normalize ********************
+
+range_indices = where((x GE 1400) AND (x LE 1500), count) ; x range
+y_subset = model[range_indices]
+max_val = max(y_subset, local_idx)
+norm_idx = range_indices[local_idx]
+
+print, 'index: ', norm_idx   ; 298
+print, 'Wavelength: ', x[norm_idx]  ;  1464.9934 Ang
+print, 'Pre-normalization value: ', model[norm_idx]  ; 258.11024
+
+; norm
+model_norm = model / model[norm_idx]
+data_norm = data / data[norm_idx]
+
+print, 'Post-normalization value: ', model_norm[norm_idx] ; 1.0000000
+

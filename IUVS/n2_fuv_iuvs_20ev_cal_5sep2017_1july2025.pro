@@ -1,0 +1,360 @@
+; 20eV
+pro n2_fuv_iuvs_20eV_cal_5sep2017_1july2025
+ang=string("305b)
+compile_opt idl2
+loadct,10,/silent
+;****************************
+;first LBH model
+
+; 20 eV
+lbh_model='Z:\MOBI\MOBI_2025\Round10\calibration\n2_model_2017\n2lbh_model_6A_uvis.tri'
+plotter="D:\SSD_I-drive\MAVEN\data_flight\calibration\model\"
+plot_output="Z:\MOBI\MOBI_2025\Round10\calibration\20eV\plots\"
+
+; change to C?
+
+;************************************
+;read in model
+close,1
+openr,1,lbh_model
+st=''
+readf,1,st
+readf,1,st
+readf,1,st
+n2_model=fltarr(1023)
+wave_model=fltarr(1023)
+for i=31,1010-44 do begin; 935  channels
+readf,1,a,b
+	wave_model[i]=a
+	n2_model[i]=b
+print,i,a,b
+endfor
+wave_model=wave_model/10.
+n2_model=n2_model/max(n2_model)
+print,'max channel ',!c, ' max signal at lambda', wave_model[!c]/10
+ window,6&plot,wave_model,n2_model,xrange=[110.0,180.0],xticks=7,xminor=5,yticks=11,yminor=5,yrange=[-.2,1]
+;stop
+;************************************
+;
+;2025 data
+  ;folder='Z:\IUVS_Data\IUVS_Breadboard\NeweGun_round10_after_energy_correction\data_reduction\'
+;fil1='Z:\IUVS_Data\IUVS_Breadboard\NeweGun_round10_after_energy_correction\data_reduction\N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl'
+ folder="Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\"
+fil1="Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\N2_20EV_FUV_TEST13_IMAGE1_HIPRESS.idl"
+
+ ; Determine which detector channel
+ ;
+ fbase = file_basename(fil1)
+ pos_fuv = strpos(fbase,'FUV')
+ pos_muv = strpos(fbase,'MUV')
+ if pos_fuv gt -1 then channel='FUV'
+ if pos_muv gt -1 then channel='MUV'
+
+ 
+ restore,fil1
+ print,'integration time  ',int_time
+ ;stop
+ ;
+ ; rotate image
+ ;
+ case channel of
+   'FUV': begin
+     arr_orig = arr
+    
+    arr1=arr*60/int_time
+   end
+   'MUV': begin
+     arr_orig = arr
+     arrr=arr
+   end
+ Endcase
+
+ y1 = 130;outside key hole
+ y2 = 940
+ 
+
+ spec_mean = mean( arr[*,y1:y2], dimension=2, /nan )  ; for rotated image
+ spat_mean = mean( arr         , dimension=1, /nan )  ; for rotated image
+ 
+ 
+;stop
+
+delta_shift=69.;print,69*0.08315 =5.73735 nm shift but see below oct 2024 changed from 69 to 79
+waveuncal=shift(wl,delta_shift); ;
+;stop
+waveuncal=waveuncal[75:1023]
+;119.484      119.567      119.650      119.733      119.817      119.900
+;119.983      120.066      120.149      120.232      120.315      120.398
+;120.482      120.565      120.648      120.731      120.814      120.897
+;120.980      121.064      121.147
+;waveuncal[1200] = 95
+
+siguncal=spec_mean
+;IGUNCAL        FLOAT     = Array[949]
+;siguncal=siguncal[75:1023];2025
+siguncal=siguncal[73:1023]
+;justification for shift= I find print,max(siguncal[50:150])=391.900 NI 120.0 nm and  print,!c+50=87 where print,waveuncal[87]= 120.066 nm so 69 works
+;siguncal=shift(siguncal,-7);since print,waveuncal[95]=120.731 and waveuncal[88]=120.066
+waveuncal=shift(waveuncal,+9)
+;print,siguncal[95]= 54.3584MTHEMAX OF 1200 A
+;print,waveuncaL[95]=119.983
+
+;stop
+yspa1=yspa;0:1023
+window,3 & plot,waveuncal,siguncal,xrange=[110,130]
+;stop
+s=plot(waveuncal,siguncal,dim=[948,948],xrange=[100,200]);peak of H Ly a=
+plot,waveuncal,siguncal,xrange=[100,200]
+;stop
+window,5 & plot,yspa1,spat_mean,xrange=[-150,100]
+print,'max of yspatial  ',max(spat_mean[130:940]), ' counts'  ;!c+130=column 570 =948 counts
+;stop
+print, 'offset from image 1 e-beam zero  ', yspa1[!c+130], ' mm'; answer = -5.8728mm
+print, 'pixel number peak  ', !c+130;=570
+yspa_new1=yspa1-yspa1[!c+130];shift of -5.872 mm
+yspa_new1_correct=yspa_new1[130:940]
+;print,where (YSPA_NEW1 ge -.5 and yspa_new1 LE .5,count)580         581         582         583         584 ,yspa_new1[582]=0.000000
+window,6&plot,yspa_new1,spat_mean,xrange=[-150,200]
+
+s=plot(yspa,spat_mean,dim=[1024,1024],xrange=[-150,200])
+p=plot(yspa_new1,spat_mean,dim=[1024,1024],xrange=[-150,200])
+;stop
+  ;******************************************************declarations-uncalibrated spectral data readin
+  
+  ;stop
+;need to subtract background again
+aa=total(siguncal[900:930])/31.
+bb=total(siguncal[0:20])/21.
+ back=0.5*(aa+bb)
+ back=aa
+ ;back=min(smooth(siguncal[700:1000],7))
+ siguncal=siguncal-back
+ ;stop
+;*************************************
+;;Lets put model and data in a file
+;
+;;**************************************************
+;lets output two ganged spectra to file
+;second model
+;fila='N2_model_IUVS_BB_6A_fwhm_spline_8sept2017.txt'
+fila="N2_model_IUVS_BB_6A_fwhm_spline_8sept2017.txt"
+close,1 
+openr,1,"D:\SSD_I-drive\MAVEN\data_flight\calibration\model\2017\" +fila
+;int2=interpol(sig_model,wave_model,lambda_flight,/spline)
+;stop
+n2_model2=interpol(n2_model[31:966],wave_model[31:966],waveuncal)
+n2_model2=n2_model2/max(n2_model2[275:280])
+print,'max of model at 2,0 band is ', waveuncal[!c]
+;int2=shift(int2,-4);int2 is model
+close,2
+;openw,2,'G:\SSD_I-drive\MOBI_2025\Round10\calibration\save\'+strcompress(string(fila))
+openw,2,"Z:\MOBI\MOBI_2025\Round10\calibration\save\" +strcompress(string(fila))
+printf,2,'ouput data file of channel #, wavelength and intensity'
+printf,2,'channel #, wavelength(model), intensity(lab), intensity (model)'
+
+for i=0,1010-76 do begin
+  a=i
+
+
+  b=waveuncal[i]
+  c=siguncal[i]
+  d=n2_model2[i];
+  printf,2,a,b,c,d
+endfor
+close,7
+window,7
+plot,waveuncal[9:860],n2_model2[9:860],xrange=[120.0,190.0],xticks=7,xminor=5,yticks=11,yminor=5,yrange=[-1.,1.0]
+close,2
+
+;*********************************************************
+;lets plot data and model
+;stop
+;window,1
+set_plot,'ps'
+device,/landscape,/color,FILENAME=plot_output+'n2_fuv_20eV_data_IUVS_model_plot_9-5-2017_R10_JULY2025.ps'
+ang=string("305b)
+!p.multi=[0]
+!x.thick=2
+!y.thick=2
+ !fancy=2
+!LINETYPE=0
+!ytitle='intensity (arb units) '
+!xtitle= 'wavelength ('+ang+')'
+
+!mtitle="N2 _Big_e-gun N2_20eV_image1_round10"
+!psym=0
+PLOT,waveuncal,n2_model2,thick=2,xrange=[120.0,180.0],xstyle=1,yrange=[-0.1,1.5],ystyle=1,xticks=8,yticks=16,xminor=5,charthick=2,charsize=1.5
+
+
+!LINETYPE=2
+oplot,waveuncal,siguncal/max(siguncal[250:300]),thick=3
+!linetype=0
+XYOUTS,1400.,0.9,"lbh model _______",charthick=2,charsize=1.5
+XYOUTS,1400.,0.8,"lbh signal --------",charthick=2,charsize=1.5
+!linetype=0
+
+
+;*****************************filename created PS
+device,/close
+SET_PLOT,'WIN'
+
+;***********************************************************************
+
+;lets do inverse calibration
+
+
+chan_start=[172,198,251,266,285,339,360,398,458,478,497,511,533,572,634]
+chan_peak=[181,210,258,277,313,347,386,410,463,489,502,518,561,588,698]
+chan_end=[198,220,266,285,339,360,398,431,478,497,511,533,572,634,718]
+
+area_data=fltarr(15)
+area_model=fltarr(15)
+wavemean=fltarr(15)
+sinv=fltarr(15)
+sens=fltarr(15)
+for j=0,14 do begin
+	area_data[j]=total(siguncal[chan_start[j]:chan_end[j]])
+	area_model[j]=total(n2_model2[chan_start[j]:chan_end[j]])
+	wavemean[j]=waveuncal[chan_peak[j]]
+endfor
+
+sinv=area_model/area_data
+sinv[10]=0.5*(sinv[9]+sinv[11])
+sinv=sinv/sinv[4]
+
+sens=1./sinv
+;lets put LBH data to a file
+;**************************************************
+;lets output LBH sensitivity data to file
+fila='n2_IUVS_BB_sensitivity_20eV_7-1-2025.txt'
+close,2
+openw,2,"Z:\MOBI\MOBI_2025\Round10\calibration\20eV\save\" +strcompress(string(fila))
+printf,2,'ouput data file of channel #, wavelength, sensitivity and inverse sensitivity'
+printf,2,'channel #, wavelength(peak), inverse sensitivity, sensitivity
+
+for i=0,14 do begin
+  a=i
+
+b=wavemean[i]
+  c=sinv[i]
+  d=sens[i]
+ 
+  printf,2,a,b,c,d
+endfor
+close,2
+;stop
+;***************************************************
+;stop
+;lets plot calibration
+;**************************************************
+;!mtitle='LASP Cassini Engineering Model Inverse Sensitvity Calibration Curve '
+!mtitle=' '
+set_plot,'ps'
+;device,/landscape,FILENAME=plotter+'n2_fuv_20eV_sensitivity_IUVS__plot_corrected_2025_1800.ps'
+
+
+xvector1=[115.0,119.5]
+yvector1=[9.5,9.5]
+
+yvector2=[9.0,9.0]
+plot,wavemean,sinv,xstyle=1,  THICK=3,ystyle=1,xrange=[110.0,180.0],xticks=7,xminor=5,yticks=11,yminor=5,yrange=[-1.,10],xtitle=$
+'Wavelength('+ Ang + ')' ,ytitle='Inverse Sensitivity (Arb Units)',charthick=3,charsize=1.5
+;!linetype=-2
+!psym=2
+oplot,wavemean,sinv,thick=4,linestyle=-2
+!linetype=0
+oplot,wavemean,sinv
+;stop
+oplot,xvector1,yvector1,thick=3,linestyle=0,psym=2
+oplot,xvector1,yvector2,thick=3,linestyle=-2,psym=4
+xyouts,120.0,9.5,' N!d2!n IUVS BB Inverse Sensitvity (Normalized to unity at 1356)' + Ang +')',charsize=1.25,charthick=3
+xyouts,120.0,9.0,' N!d2!n Sensitivity x 4' ,charsize=1.25,charthick=3
+;!linetype=-2
+;psym=2
+oplot,xvector1,yvector1,thick=3,linestyle=-2,psym=2
+oplot,xvector1,yvector1,thick=3,linestyle=0,psym=0
+oplot,xvector1,yvector2,thick=3,linestyle=2,psym=0
+!linetype=-2
+!psym=4;
+oplot,wavemean,sens*4.,thick=3;,linestyle=-2,psym=4
+!linetype=2
+!psym=0
+oplot,wavemean,sens*4,thick=3
+;!linetype=-1
+;psym=4
+oplot,xvector1,yvector2,thick=3,linestyle=-2,psym=4;
+!linetype=0
+
+ device,/close
+set_plot,'win'
+;stop
+;end plot 1
+;****************************************************
+;lets calcaulate sinv every 10A
+;*********************************************************
+;
+
+;fil='w:\Documents\IBM\MAVEN\data_flight\calibration\model\2017\final_lasp_eng_cal_pt10A_2017.txt'
+
+final_INVSENS=dblarr(100)
+
+final_wave=dblarr(50)
+final_wave=findgen(50)*1.+126.0
+sinv_IUVS=fltarr(25)
+sinv_flight=fltarr(25)
+final_INVSENS=interpol(sinv,wavemean,final_wave,/quadratic)
+final_sens=1./final_INVSENS
+;lets compare our final calibration to cassini flight cal
+flight_cal=[1.,1.,56.79,83.3,121.24,125.13,182.41,220.77,222.92,219.88,203.56,193.76,172.45,$
+170.96,152.53,138.92,99.884,83.061,77.357,69.176,56.330,52.775,30.138,14.349,4.69]
+flight_wave=[1130.,1140.,1150.,1164.,1196.,1200.,1250.,1300.,1322.,1350.,1380.,$
+1400.,1450.,1460.,1500.,1550.,1600.,1650.,1668.,1700.,1739.,1750.,1800.,1850.,1900.]
+flight_wave=flight_wave/10.
+sinv_flight=1./flight_cal
+sinv_flight=sinv_flight/sinv_flight[9]
+
+
+ set_plot,'ps' & device,/landscape,/color,file='Z:\MOBI\MOBI_2025\Round10\calibration\20eV\plots\n2cal_interpol_sens_5a_7-1-2025.ps'
+
+;had: answer eq 0 then
+;!PSYM=0
+!LINETYPE=0
+
+;!MTITLE='8/2000 1M (S-1) LASP CASSINI ENGINEERING CALIBRATION in !c'+ FIL
+!mtitle=' '
+plot,final_wave,final_invsens,ystyle=1,yrange=[-2,10],yticks=12,yminor=5,xstyle=1,xrange=[110.0,180.0],background=255,color=0,xtitle=$
+'Wavelength(' + Ang + ')',ytitle='Inverse Sensitivity (Arb Units)',title ='  N!d2!n 20eV Inverse sensitivity Image 1 test 17, 2025 Round 10',xticks= 7,xminor=5,thick=3,charsize=1,charthick=3
+
+xyouts,120.0,8,'__________ Interpolated Inverse 20eV Sensitvity (Normalized at 135.6'+ 'nm)',charsize=1,charthick=3
+xyouts,120.0,7,'* * * * * final sensitvity cal  ',charsize=1,charthick=5,color=230
+
+oplot,final_wave,final_sens,color=230,thick=3
+
+
+!linetype=2
+
+	oplot,flight_wave,sinv_flight,thick=3,color=130
+	!linetype=0
+	xyouts,120.0,6,'- - - - Inverse Sensitivity Flight Instrument',charsize=1,charthick=3,color=130
+
+!psym=0
+!linetype=0
+                                                    
+device,/close
+set_plot,'win'
+;lets print final calibration  to file
+close,3
+;***************************************
+openw,3,'Z:\MOBI\MOBI_2025\Round10\calibration\20eV\save\final_CASSINI_ENG_20eV_cal_pt5A_JULY2025.txt'
+printf,3,'            #     lambda      S-1          S       '
+for i = 0,49 do begin
+	printf, 3,I,final_wave[I], final_INVsens[i],1./final_invsens[I]
+endfor
+	close,3
+	stop
+
+stop
+end
+
+
+

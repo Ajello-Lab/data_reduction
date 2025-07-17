@@ -19,8 +19,6 @@ plt.colorbar()  # Add a colorbar
 plt.title('Image Display')
 plt.show()
 
-
-
 print('Done')
 
 pass
