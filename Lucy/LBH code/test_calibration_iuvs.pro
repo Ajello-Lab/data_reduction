@@ -2,6 +2,7 @@ pro test_calibration_iuvs
 
 ; calibration, normalization, and plotting with the model and shifted
 
+
 ; ***** DATA *****
 lab_data= "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\N2_20EV_FUV_TEST13_IMAGE1_HIPRESS.idl"
 restore, filename="C:\Users\lufa5942\flight_data_fuv"
@@ -50,12 +51,19 @@ back=0.5*(aa+bb)
 back=aa
 siguncal=siguncal-back
 
-sigcal = INVSENS_BB * siguncal  ; calibrated, unnormalized
+;calibrate
+sigcal = (1/INVSENS_BB) * siguncal ; calibrated, unnormalized
 ;cal = sigcal / max(smooth(sigcal[260:290], 1))  ; normalized
+
+; debug
+print, 'Min/max of siguncal:', min(siguncal), max(siguncal) ; max=96.9352
+print, 'Min/max of INVSENS_BB:', min(1/INVSENS_BB), max(1/INVSENS_BB)  ; max=1.1876664
+print, 'Min/max of sigcal:', min(sigcal), max(sigcal) ; max=96.935234
 
 temperature = 300 ; K
 p = [temperature]
 x =waveuncal*10D
+
 
 ; ***** MODEL *****
 v=[0.0710558,     0.133515,     0.162337,     0.170232,     0.159273,     0.109679,    0.0719076]; vib pop of may 14-16 13-17 UT 60-70sza
@@ -73,6 +81,7 @@ for w=0, shp[1]-1 do begin;all wl
     model=model+f
   endfor
 endfor
+
 
 ; ***** NORMALIZE *****
 x_model = waveuncal * 10D  ; model wavelengths in Angstroms
@@ -96,6 +105,8 @@ data_norm  = sigcal / sigcal[norm_idx]
 ; ***** PLOT *****
 p1 = plot( x_data, shift(data_norm,-75), linestyle=0, xtitle='wavelength (angstroms)', font_size=16 ) ;xr=[1100,1800]
 p2 = plot( x_model, model_norm*5., /over, color='red' )
+
+;p1 = plot( x_data, shift(sigcal,-75), linestyle=0, xtitle='wavelength (angstroms)', font_size=16 ) ; calibrated, unnormalized
 
 stop
 
