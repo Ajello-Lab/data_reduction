@@ -25,11 +25,9 @@ pro data_and_model
   case user_name of
     'holsclaw': begin
       path_lab_data = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/NeweGun_round10_after_energy_correction/data_reduction/'
-      ;file_calibration = '/Users/holsclaw/Downloads/2025-07-17_joe/fuv_22sept2017_calibration.save'
     end
     'lufa5942': begin
       path_lab_data = "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\"
-      ;file_calibration = "C:\Users\lufa5942\2017fuv_calibration"
     end
   endcase
   file_calibration = path_repo + 'IUVS' + path_sep() + 'fuv_22sept2017_calibration.save'
@@ -38,14 +36,13 @@ pro data_and_model
   file_model = path_repo + 'Lucy' + path_sep() + 'LBH code' + path_sep() + 'calibration_victor' + path_sep() + 'n2_lbh_rot_293K.sav'
   path_plots = path_repo + 'IUVS' + path_sep() + 'LBH_calibration' + path_sep() + 'plots' + path_sep()
 
+  ;
+  ; check to make sure all data files and paths exist'
+  ;
   flag_calibration = file_test(file_calibration)
   flag_data = file_test(file_data)
   flag_model = file_test(file_model)
   flag_path_plots = file_test(path_plots,/directory)
-
-  ;  
-  ; check to make sure all data files and paths exist'
-  ;
   if flag_calibration eq 0 then begin
     print, 'file does not exist: ', file_calibration
     stop
@@ -160,7 +157,6 @@ sig = signorm
   ;win5.save,wdir_plots+'#2 fuv_Round6_nov10_700km_CH4_greg.png'
   ;p0.close
   
-  stop
   
  ; sun bakground
 
