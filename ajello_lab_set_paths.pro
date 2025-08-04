@@ -11,7 +11,7 @@
 ; OUTPUTS:
 ; none.
 ;-
-pro ajello_lab_set_paths, path_base
+pro ajello_lab_set_paths, path_base, path_repo
 
 ;  defsysv,'!path_data',exists=exists1
 ;  defsysv,'!path_data2',exists=exists2
@@ -36,11 +36,11 @@ pro ajello_lab_set_paths, path_base
         stop   
       end
     endcase
-      
+    
     defsysv,'!path_base',path_base
 
     file = routine_filepath()
-    path = file_dirname(file,/MARK_DIRECTORY)
-    DEFSYSV, '!path_repo', path
+    path_repo = file_dirname(file,/MARK_DIRECTORY)
+    DEFSYSV, '!path_repo', path_repo
   
 end

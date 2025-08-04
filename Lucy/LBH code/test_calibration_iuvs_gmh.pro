@@ -165,17 +165,59 @@ sm1 = 1
 sm2 = 1
 wlr1 = 135.
 wlr2 = 170.
-ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, plots=0
+;ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, plots=0
+c_correlate_interpolate_reference, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, lag_max, plots=0
+;ndx_max=findndx(c,max(c))
+;print, 'wavelength shift: ', lag[ndx_max]
+;spec1_shifted = interpol( spec1, wlv1, wlv1+lag[ndx_max] )
 
-ndx_max=findndx(c,max(c))
+;p = plot( lag, c )
+;markerp,p,x=lag[ndx_max],linestyle=2
 
-win = window(dim=[800,600])
-p1 = plot( wlv1-lag[ndx_max], spec1*spec1_norm_vec[ndx_max], current=win, $
-  xtitle='wavelength (nm)', ytitle='', font_size=16, name='spec1 (shifted)' )
-p2 = plot( wlv1, spec2, /overplot, color='red', name='spec2' )
+
+lag_step = indgen(200)-100
+c_correlate_interpolate_lag, wlv1, wlv2, spec1, spec2, lag_step, sm1, sm2, $
+  wlr1, wlr2, r, lag_vec_root, $
+  no_plots=no_plots, $
+  step_interp=step_interp
+
+print, 'c_correlate_interpolate_reference: ', lag_max
+print, 'c_correlate_interpolate_lag:       ', lag_vec_root * mean(deriv(wlv1))
+
+spec1_norm = 
+p1 = plot( wlv1, spec1 )
+p2 = plot( wlv2, spec2, /over, color='red' )
+
+stop
+
+
+
+
+win = window(dim=[1200,600])
+;p1 = plot( wlv1-lag[ndx_max], spec1*spec1_norm_vec[ndx_max], current=win, $
+;  xtitle='wavelength (nm)', ytitle='', font_size=16, name='data (shifted)', $
+;  xr=[120,190], thick=2 )
+p1 = plot( wlv1, spec1_shifted*spec1_norm_vec[ndx_max], current=win, $
+  xtitle='wavelength (nm)', ytitle='', font_size=16, name='data (shifted)', $
+  xr=[120,190], thick=2 )
+p2 = plot( wlv1, spec2, /overplot, color='red', name='model', thick=2 )
 leg = legend(target=[p1,p2],font_size=14)
+;path_save = '/Users/holsclaw/Downloads/2025-07-17_joe/'
+;win.save,path_save+file_basename(file_lab_data,'.idl')+'_comparison_to_model.png'
 
+win = window(dim=[1200,600])
+p1 = plot( wlv1, spec1_shifted*spec1_norm_vec[ndx_max], current=win, $
+  xtitle='wavelength (nm)', ytitle='', font_size=16, name='data (shifted)', $
+  xr=[130,140], thick=2 )
+p2 = plot( wlv1, spec2, /overplot, color='red', name='model', thick=2 )
+leg = legend(target=[p1,p2],font_size=14)
+markerp,p1,y=0,linestyle=2
+markerp,p1,x=131.9,linestyle=2
+markerp,p1,x=133.4,linestyle=2
+;path_save = '/Users/holsclaw/Downloads/2025-07-17_joe/'
+;win.save,path_save+file_basename(file_lab_data,'.idl')+'_comparison_to_model_xzoom.png'
 
+;131,9
 
 stop
 

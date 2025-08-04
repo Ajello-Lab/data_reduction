@@ -17,15 +17,74 @@ pro scaled_iuvs_psf_model, x, ff
 end
 
 pro data_and_model
-  restore, "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav",/relax
+
+  ajello_lab_set_paths, path_base, path_repo
+
+  ; ***** DATA *****
+  user_name = (get_login_info()).user_name
+  case user_name of
+    'holsclaw': begin
+      path_lab_data = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/NeweGun_round10_after_energy_correction/data_reduction/'
+      ;file_calibration = '/Users/holsclaw/Downloads/2025-07-17_joe/fuv_22sept2017_calibration.save'
+    end
+    'lufa5942': begin
+      path_lab_data = "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\"
+      ;file_calibration = "C:\Users\lufa5942\2017fuv_calibration"
+    end
+  endcase
+  file_calibration = path_repo + 'IUVS' + path_sep() + 'fuv_22sept2017_calibration.save'
+  ;file_lab_data = path_lab_data + 'N2_20EV_FUV_TEST13_IMAGE1_HIPRESS.idl'
+  file_data = path_lab_data + 'N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl'
+  file_model = path_repo + 'Lucy' + path_sep() + 'LBH code' + path_sep() + 'calibration_victor' + path_sep() + 'n2_lbh_rot_293K.sav'
+  path_plots = path_repo + 'IUVS' + path_sep() + 'LBH_calibration' + path_sep() + 'plots' + path_sep()
+
+  flag_calibration = file_test(file_calibration)
+  flag_data = file_test(file_data)
+  flag_model = file_test(file_model)
+  flag_path_plots = file_test(path_plots,/directory)
+
+  ;  
+  ; check to make sure all data files and paths exist'
+  ;
+  if flag_calibration eq 0 then begin
+    print, 'file does not exist: ', file_calibration
+    stop
+  endif
+  if flag_data eq 0 then begin
+    print, 'file does not exist: ', file_data
+    stop
+  endif
+  if flag_model eq 0 then begin
+    print, 'file does not exist: ', file_model
+    stop
+  endif
+  if flag_path_plots eq 0 then begin
+    print, 'file does not exist: ', path_plots
+    stop
+  endif
+
+  ;
+  ; generate an estimate of the instrument point spread function
+  ;  (actually, this is the line-spread function)
+  ; 
+  ;restore, "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav",/relax
+  restore, file_model, /relax
   scaled_iuvs_psf_model, wave[0:301], psf
+  
+  ;
+  ; convolve each rotational band by the PSF
+  ; 
+  ; TODO: multiply the high-resolution model by the instrument sensitivity
+  ;  prior to convolving by the PSF
+  ;
   for i=0, ((size(lbh))[2]-1) do begin   ; joe added this loop?
     lbh[*, i] = convol(lbh[*, i], psf)
   endfor
   ;done
   ;
   ; LOAD IN DATA ***********************
-  restore, "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl", /verbose
+  ;restore, "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl", /verbose
+  restore, file_data, /verbose
   y1 = 130;outside key hole
   y2 = 940
   spec_mean = mean( arr[*,y1:y2], dimension=2, /nan )  ; for rotated image
@@ -49,6 +108,10 @@ pro data_and_model
   norm_wavelength = 135.5
 ;signorm = siguncal / max(smooth(siguncal[260:290], 1))  ; normalized
 
+;
+; estimate residual detector background by calculating the average value
+;  at the extreme ends of the detector with no expected signal 
+;
 background = ( mean( spec_mean[x1:x2] ) + mean( spec_mean[x3:x4] ) ) / 2.
 sig_back_sub = siguncal - background
 sig_back_sub = sig_back_sub > 0.0  ; clip all negative values to 0
@@ -56,27 +119,27 @@ sig_back_sub = sig_back_sub > 0.0  ; clip all negative values to 0
 signorm = sig_back_sub / max(sig_back_sub)
 sig = signorm
 
-  ; *************************************
-  ;stop
-  ;need print file
-  close,4
-  folder= 'C:\Users\lufa5942\Documents\data_reduction\IUVS\LBH_calibration\save\'
-  ;LETS print file of intensiites of uncalibrated N2
-  openw,4,folder+'N2_LBH_intensities_07_27_2025.txt'
-  printf,4,'n2_LBH__intensities v prime from 0-6'
-  printf,4,'number,  wavelength, int[0], int[1],  int[2], int[3],  int[4],  int[5],  int[6]
-  ;read in file old
-  FOR I=0,1799 DO BEGIN
-    ;for j=0,4 do begin
-    printF,4,'$(I4,1x,f10.4,7(2x,f8.3))',i,wave[i],lbh[i,0]/lbh[385,3],lbh[i,1]/lbh[385,3],lbh[i,2]/lbh[385,3],lbh[i,3]/lbh[385,3],lbh[i,4]/lbh[385,3],lbh[i,5]/lbh[385,3],lbh[i,6]/lbh[385,3]
-
-    ;ENDFOR
-  endfor
-  ;stop
-  close,4
-  wdir_plots=  'C:\Users\lufa5942\Documents\data_reduction\IUVS\LBH_calibration\plots\'
-  ;wdir_plots='G:\SSD_I-drive\Cassini\2025\library_plots\regression\2025\png_173k\18march2025\april14\'
-  ;win5=window(window_title='#2 Calibrated unsmoothed-normalized 2009 DOY 173 Titan ! c limb Spectra with Altitude 700km & CH4 Absorp')
+;  ; *************************************
+;  ;stop
+;  ;need print file
+;  close,4
+;  folder= 'C:\Users\lufa5942\Documents\data_reduction\IUVS\LBH_calibration\save\'
+;  ;LETS print file of intensiites of uncalibrated N2
+;  openw,4,folder+'N2_LBH_intensities_07_27_2025.txt'
+;  printf,4,'n2_LBH__intensities v prime from 0-6'
+;  printf,4,'number,  wavelength, int[0], int[1],  int[2], int[3],  int[4],  int[5],  int[6]
+;  ;read in file old
+;  FOR I=0,1799 DO BEGIN
+;    ;for j=0,4 do begin
+;    printF,4,'$(I4,1x,f10.4,7(2x,f8.3))',i,wave[i],lbh[i,0]/lbh[385,3],lbh[i,1]/lbh[385,3],lbh[i,2]/lbh[385,3],lbh[i,3]/lbh[385,3],lbh[i,4]/lbh[385,3],lbh[i,5]/lbh[385,3],lbh[i,6]/lbh[385,3]
+;
+;    ;ENDFOR
+;  endfor
+;  ;stop
+;  close,4
+;  wdir_plots=  'C:\Users\lufa5942\Documents\data_reduction\IUVS\LBH_calibration\plots\'
+;  ;wdir_plots='G:\SSD_I-drive\Cassini\2025\library_plots\regression\2025\png_173k\18march2025\april14\'
+;  ;win5=window(window_title='#2 Calibrated unsmoothed-normalized 2009 DOY 173 Titan ! c limb Spectra with Altitude 700km & CH4 Absorp')
   
   ; PLOT SEPERATE v' ***
   
@@ -92,10 +155,12 @@ sig = signorm
 
   leg = LEGEND(TARGET=[p0,p1,p2,p3,p4,p5,p6], POSITION=[177,1.1], $
     /DATA, /AUTO_TEXT_COLOR)
-  print,'this is wdir_plots   ',wdir_plots
+  ;print,'this is wdir_plots   ',wdir_plots
  ; win5.save,wdir_plots+'lbh_intensities.png'
   ;win5.save,wdir_plots+'#2 fuv_Round6_nov10_700km_CH4_greg.png'
   ;p0.close
+  
+  stop
   
  ; sun bakground
 

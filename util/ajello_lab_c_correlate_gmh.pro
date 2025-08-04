@@ -28,23 +28,26 @@
 ;  smooth spec1 by sm1
 ;  smooth spec2 by sm2
 ;  interpolate spec2 to spec1 with wlv2 shifted by lag[i]
+;  normalize the magnitude of the interpolated spec2 across the specified 
+;   wavelength range
 ;  calculate the correlation coefficient between wl1 and wl2
 ;  repeat for each element of lag
 ;-
-pro ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, fac_norm_vec, plots=plots
+pro ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, $
+  wlr1, wlr2, c, spec2_sm_max, fac_norm_vec, plots=plots
 
 nlag = n_elements(lag)
 ndx1 = where( wlv1 gt wlr1 and wlv1 lt wlr2 )
 
-if keyword_set(plots) then $
-  p = plot( wlv1, spec1, yr=[0,max(spec1)*1.1] )
+;if keyword_set(plots) then $
+;  p = plot( wlv1, spec1, yr=[0,max(spec1)*1.1] )
 
 c = fltarr(nlag)
 spec1_sm = smooth( spec1, sm1 )
 
 ;spec2_smi_vec = fltarr( n_elements(spec1), nlag )
 
-fac_norm = max( spec1 ) / max(spec2 )
+;fac_norm = max( spec1 ) / max(spec2 )
 
 fac_norm_vec = fltarr(nlag)
 for i = 0, nlag - 1 do begin
@@ -64,7 +67,8 @@ for i = 0, nlag - 1 do begin
 ;  endif
 endfor
 
-ndx_max = findndx(c,max(c))
+;ndx_max = findndx(c,max(c))
+c_max = max(c, ndx_max)
 spec2_sm = smooth( spec2, sm2 )
 spec2_sm_max = interpol( spec2_sm, wlv2+lag[ndx_max], wlv1 )
 
