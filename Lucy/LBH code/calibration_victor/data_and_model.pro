@@ -75,6 +75,7 @@ pro data_and_model
   scaled_iuvs_psf_model, wave[0:301], psf
   wave_lbh = wave / 10.
   
+  lbh_orig = lbh
   ;
   ; convolve each rotational band by the PSF
   ; 
@@ -84,6 +85,19 @@ pro data_and_model
   for i=0, ((size(lbh))[2]-1) do begin   ; joe added this loop?
     lbh[*, i] = convol(lbh[*, i], psf)
   endfor
+  
+  p1 = plot( wave, lbh_orig[*,0] )
+  p2 = plot( wave, lbh[*,0]/total(psf), /over, color='red' )
+
+  lbh_orig_tot = total( lbh_orig, 2 )  
+  lbh_tot = total( lbh, 2 ) / total(psf)
+  
+  p1 = plot( wave, lbh_orig_tot )
+  p2 = plot( wave, lbh_tot, /over, color='red' )
+  
+  
+  stop
+  
   ;done
   ;
   ; LOAD IN DATA ***********************
@@ -170,7 +184,7 @@ sig = signorm
   ;
   ; empirically-derived wavelength shift of data to match the model
   ;
-  wl_data_shift = 6.25  
+  wl_data_shift = 6.3  
   wl_shifted = wl - wl_data_shift
   
  ; PLOT SUM v' ***
@@ -263,12 +277,18 @@ p1 = plot(wavemean, sens * 5.0, /over, color='red', linestyle=2, thick=2)
 
 
 ; Optional: Apply interpolated sensitivity to full data
-sens_interp = interpol(sens, wavemean, wl, /spline)
-sigcal = siguncal * sens_interp  ; calibrated spectrum
+sens_interp = interpol(sens, wavemean, wl_shifted, /spline) > 0
+sigcal = siguncal / sens_interp  ; calibrated spectrum
+
+ndx_bad = where( finite(sigcal) eq 0 )
+sigcal[ndx_bad] = 0.
+
+p1 = plot( wavemean, sens, symbol='o' )
+p2 = plot( wl_shifted, sens_interp, color='red', /over )
 
 ; idx
- max_val = max(sigcal)
- max_cal_idx = where(sigcal EQ max_val, count)
+ max_val = max(sigcal, max_cal_idx)
+ ;max_cal_idx = where(sigcal EQ max_val, count)
 
 ; Plot LBH model (normalized)
 p0 = plot(wave[0:1799]/10.0, lbh_total / lbh[385,3], $
@@ -276,10 +296,10 @@ p0 = plot(wave[0:1799]/10.0, lbh_total / lbh[385,3], $
   xr=[120,180], $
   xtitle='Wavelength (nm)', $
   ytitle='Total LBH Intensity (arb units)', $
-  title='Model vs. Calibrated Data')
+  title='Model vs. Calibrated Data', yr=[0,1.5])
 
 ; Plot calibrated data
-p1 = plot(wl, sigcal/sigcal[max_cal_idx], /over, color='black', linestyle=2, thick=2)
+p1 = plot(wl_shifted, sigcal/sigcal[max_cal_idx]*30., /over, color='black', linestyle=2, thick=2)
 
 stop
 end

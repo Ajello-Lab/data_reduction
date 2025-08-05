@@ -166,7 +166,7 @@ sm2 = 1
 wlr1 = 135.
 wlr2 = 170.
 ;ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, plots=0
-c_correlate_interpolate_reference, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, lag_max, plots=0
+c_correlate_interpolate_reference, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, lag_max, plots=1
 
 
 lag_step = indgen(200)-100
