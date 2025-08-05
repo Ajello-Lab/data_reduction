@@ -66,7 +66,14 @@ pro data_and_model
   ; 
   ;restore, "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav",/relax
   restore, file_model, /relax
+;  % RESTORE: Recovering incompatible definition of structure LIST using relaxed structure assignment rules.
+;  % RESTORE: Recovering incompatible definition of structure HASH using relaxed structure assignment rules.
+;  % RESTORE: Restored variable: TROT.
+;  % RESTORE: Restored variable: WAVE.
+;  % RESTORE: Restored variable: LBH.
+;  % RESTORE: Restored variable: LIST.
   scaled_iuvs_psf_model, wave[0:301], psf
+  wave_lbh = wave / 10.
   
   ;
   ; convolve each rotational band by the PSF
@@ -160,6 +167,11 @@ sig = signorm
   
  ; sun bakground
 
+  ;
+  ; empirically-derived wavelength shift of data to match the model
+  ;
+  wl_data_shift = 6.25  
+  wl_shifted = wl - wl_data_shift
   
  ; PLOT SUM v' ***
   lbh_total = total(lbh[0:1799, *], 2)  ; Sum over vibrational levels
@@ -169,7 +181,7 @@ sig = signorm
           XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", $
           title="LBH Model (Summed)", name='model sum')
           
-   p1 = plot(wl-6.25,  signorm, /over, color='black', linestyle=5, name='data')
+   p1 = plot( wl_shifted,  signorm, /over, color='black', linestyle=5, name='data' )
    
    leg = legend(target=[p0, p1], position=[175,1.0], /data, /auto_text_color)
   ; win6.save,wdir_plots+'lbh_intensities_sum.png'
@@ -181,9 +193,21 @@ stop
 ; why not take avg difference between model and data heights per peak to get calibration number then add it?
 
 ; area method
-wl_start = [126, 128.8, 131.7, 134.4, 137.3, 140.3, 143.7, 145.4, 152.1, 154.4, 162, 168.1]
-wl_end = [128.2, 130.5, 134.2, 136.2, 139.1, 142.1, 145.4, 148, 154, 156.8, 163.5, 169.5]
+wl_start = [126.0, 128.8, 131.7, 134.4, 137.3, 140.3, 143.7, 145.4, 152.1, 154.4, 162.0, 168.1]
+wl_end =   [128.2, 130.5, 134.2, 136.2, 139.1, 142.1, 145.4, 148.0, 154.0, 156.8, 163.5, 169.5]
 n_peaks = n_elements(wl_start)
+
+
+
+p0 = plot(wave_lbh, lbh_total / lbh[385,3], $
+  xr=[120,180], color='red', linestyle=0, $
+  XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", $
+  title="LBH Model (Summed)", name='model sum')
+p1 = plot( wl_shifted,  signorm, /over, color='black', linestyle=5, name='data' )
+for i = 0, n_peaks - 1 do $
+  plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
+
+
 
 ; initialize arrays
 area_data  = fltarr(n_peaks)  ;filtarr = arrays of 0 (like initializing)
@@ -191,27 +215,39 @@ area_model = fltarr(n_peaks)
 wavemean   = fltarr(n_peaks)
 
 ; integrated areas per peak
-area_data=fltarr(n_peaks)
-area_model=fltarr(n_peaks)
-wavemean=fltarr(n_peaks)
-sinv=fltarr(n_peaks)
-sens=fltarr(n_peaks)
-sig = fltarr(n_peaks)
-for i=0,n_peaks-1 do begin
-  area_data[i]=total(sig[wl_start[i]:wl_end[i]])
-  area_model[i]=total(n2_model[wl_start[i]:wl_end[i]])
-  wavemean[i]=wave[wl_peak[i]]
+area_data = fltarr(n_peaks)
+area_model = fltarr(n_peaks)
+wavemean = fltarr(n_peaks)
+wavecen = fltarr(n_peaks)
+sinv = fltarr(n_peaks)
+sens = fltarr(n_peaks)
+;sig = fltarr(n_peaks)
+for i = 0, n_peaks - 1 do begin
+  ndx_data = where( (wl_shifted gt wl_start[i]) and (wl_shifted lt wl_end[i]) )
+  area_data[i] = total( sig[ndx_data] )
+  
+  ndx_model = where( (wave_lbh gt wl_start[i]) and (wave_lbh lt wl_end[i]) )
+  area_model[i] = total( lbh_total[ndx_model] )
+  
+  ; average wavelength
+  wavemean[i] = mean( wl_shifted[ndx_data] )
+  
+  ; centroid wavelength
+  wavecen[i] = total( (wave_lbh[ndx_model]) * (lbh_total[ndx_model]) ) / total( lbh_total[ndx_model] )
 endfor
 
 sinv=area_model/area_data
 sinv=sinv/min(sinv)
 sens=1./sinv
 
-; Save to file
-openw,1,'n2_IUVS_inverse_sens_calculated.txt'
-printf,1,'# index   wavemean[nm]   inverse_sens   sensitivity'
-FOR i = 0, n_peaks-1 DO printf,1,i, wavemean[i], sinv[i], sens[i]
-close,1
+p1 = plot( wavecen, area_data / area_model, symbol='o' )
+
+
+;; Save to file
+;openw,1,'n2_IUVS_inverse_sens_calculated.txt'
+;printf,1,'# index   wavemean[nm]   inverse_sens   sensitivity'
+;FOR i = 0, n_peaks-1 DO printf,1,i, wavemean[i], sinv[i], sens[i]
+;close,1
 
 ; Plot sensitivity curves
 ;aaa = max(sinv)

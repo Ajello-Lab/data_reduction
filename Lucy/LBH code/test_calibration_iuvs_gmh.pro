@@ -167,12 +167,6 @@ wlr1 = 135.
 wlr2 = 170.
 ;ajello_lab_c_correlate_gmh, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, plots=0
 c_correlate_interpolate_reference, wlv1, wlv2, spec1, spec2, lag, sm1, sm2, wlr1, wlr2, c, spec2_sm_max, spec1_norm_vec, lag_max, plots=0
-;ndx_max=findndx(c,max(c))
-;print, 'wavelength shift: ', lag[ndx_max]
-;spec1_shifted = interpol( spec1, wlv1, wlv1+lag[ndx_max] )
-
-;p = plot( lag, c )
-;markerp,p,x=lag[ndx_max],linestyle=2
 
 
 lag_step = indgen(200)-100
@@ -184,9 +178,19 @@ c_correlate_interpolate_lag, wlv1, wlv2, spec1, spec2, lag_step, sm1, sm2, $
 print, 'c_correlate_interpolate_reference: ', lag_max
 print, 'c_correlate_interpolate_lag:       ', lag_vec_root * mean(deriv(wlv1))
 
-spec1_norm = 
-p1 = plot( wlv1, spec1 )
-p2 = plot( wlv2, spec2, /over, color='red' )
+ndx_wave = where( (wlv1 gt wlr1) and (wlv1 lt wlr2) )
+spec1_norm = spec1 / total(spec1[ndx_Wave])
+spec2_norm = spec2 / total(spec2[ndx_Wave])
+
+p1 = plot( wlv1-lag_max, spec1_norm )
+p2 = plot( wlv2, spec2_norm, /over, color='red' )
+
+spec2_normi = interpol( spec2_norm, wlv2+lag_max, wlv1 )
+
+p1 = plot( wlv1, spec1_norm )
+p2 = plot( wlv2, spec2_normi, /over, color='red' )
+
+p1 = plot( wlv1, spec1_norm / spec2_normi, yr=[-1,5] )
 
 stop
 
