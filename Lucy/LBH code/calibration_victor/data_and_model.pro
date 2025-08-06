@@ -86,6 +86,7 @@ pro data_and_model
     lbh[*, i] = convol(lbh[*, i], psf)
   endfor
   
+  ; greg plots (checks)
   p1 = plot( wave, lbh_orig[*,0] )
   p2 = plot( wave, lbh[*,0]/total(psf), /over, color='red' )
 
@@ -99,10 +100,38 @@ pro data_and_model
   stop
   
   ;done
-  ;
+  
   ; LOAD IN DATA ***********************
-  ;restore, "Z:\round10\NeweGun_round10_after_energy_correction\data_reduction\N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl", /verbose
   restore, file_data, /verbose
+;  % RESTORE: IDL version 9.0.0 (darwin, arm64).
+;  % RESTORE: Restored variable: ARR.
+;  % RESTORE: Restored variable: ARR_LIGHT_AVG.
+;  % RESTORE: Restored variable: ARR_DARK_AVG.
+;  % RESTORE: Restored variable: ARR_LIGHT_SDV.
+;  % RESTORE: Restored variable: ARR_DARK_SDV.
+;  % RESTORE: Restored variable: ARR_MEDIAN.
+;  % RESTORE: Restored variable: ARR_LIGHT_MEDIAN.
+;  % RESTORE: Restored variable: ARR_DARK_MEDIAN.
+;  % RESTORE: Restored variable: ARR_LIGHT_MAD.
+;  % RESTORE: Restored variable: ARR_DARK_MAD.
+;  % RESTORE: Restored variable: SIG_LIGHT.
+;  % RESTORE: Restored variable: SIG_DARK.
+;  % RESTORE: Restored variable: JD_DARK.
+;  % RESTORE: Restored variable: JD_LIGHT.
+;  % RESTORE: Restored variable: DESC.
+;  % RESTORE: Restored variable: SOURCE_ROUTINE.
+;  % RESTORE: Restored variable: GAS.
+;  % RESTORE: Restored variable: ENERGY.
+;  % RESTORE: Restored variable: CHANNEL.
+;  % RESTORE: Restored variable: TEMP_LIGHT.
+;  % RESTORE: Restored variable: TEMP_DARK.
+;  % RESTORE: Restored variable: FILE_DESC_LIGHT.
+;  % RESTORE: Restored variable: FILE_DESC_DARK.
+;  % RESTORE: Restored variable: PATH.
+;  % RESTORE: Restored variable: INT_TIME.
+;  % RESTORE: Restored variable: WL.
+;  % RESTORE: Restored variable: YSPA.
+
   y1 = 130;outside key hole
   y2 = 940
   spec_mean = mean( arr[*,y1:y2], dimension=2, /nan )  ; for rotated image
@@ -160,7 +189,6 @@ sig = signorm
 ;  ;win5=window(window_title='#2 Calibrated unsmoothed-normalized 2009 DOY 173 Titan ! c limb Spectra with Altitude 700km & CH4 Absorp')
   
   ; PLOT SEPERATE v' ***
-  
   p0 = plot( wave[*]/10.0,lbh[0:1799,0]/lbh[385,3], xr=[120,180],name="v'=0",yr=[0,1.5], color='black',layout=[1,1,1],XTITLE='Wavelength (nm)', YTITLE=" Relative Intensity of v'  [arb units]",title=" LBH relative intensity with v'")
   p1 = plot( wave[*]/10.0, lbh[0:1799,1]/lbh[385,3], /over, color='red',name='v1' )
   p2 = plot( wave[*]/10.0,  LBH[0:1799,2]/lbh[385,3], /over, color='blue' ,name='v2')
@@ -187,7 +215,7 @@ sig = signorm
   wl_data_shift = 6.3  
   wl_shifted = wl - wl_data_shift
   
- ; PLOT SUM v' ***
+ ; PLOT SUM v' *** with uncalib data
   lbh_total = total(lbh[0:1799, *], 2)  ; Sum over vibrational levels
   
   p0 = plot(wave[*]/10.0, lbh_total / lbh[385,3], $
@@ -202,17 +230,15 @@ sig = signorm
 
 stop
 
-; CALIBRATION ********************************   STILL WORKING ON THIS....
-
-; why not take avg difference between model and data heights per peak to get calibration number then add it?
-
+; CALIBRATION ********************************   STILL WORKING ON THIS...
+ 
 ; area method
 wl_start = [126.0, 128.8, 131.9, 134.7, 137.5, 140.4, 143.9, 145.7, 152.2, 155, 159.7, 162.2, 165.4, 168.3, 173, 174.5, 177.9]
 wl_end =   [128.2, 130.5, 133.4, 136.3, 139.3, 142.3, 145.5, 148.4, 154.0, 156.8, 160.7, 164, 166.7, 169.8, 174.4, 176.2, 179.5]
 n_peaks = n_elements(wl_start)
 
 
-
+; plot model, data, and bands (ranges)
 p0 = plot(wave_lbh, lbh_total / lbh[385,3], $
   xr=[120,180], color='red', linestyle=0, $
   XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", $
@@ -220,7 +246,6 @@ p0 = plot(wave_lbh, lbh_total / lbh[385,3], $
 p1 = plot( wl_shifted,  signorm, /over, color='black', linestyle=5, name='data' )
 for i = 0, n_peaks - 1 do $
   plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
-
 
 
 ; initialize arrays
@@ -254,21 +279,16 @@ sinv=area_model/area_data
 sinv=sinv/min(sinv)
 sens=1./sinv
 
+; plot areas
+p0 = plot(wavemean, area_data/max(area_data), title='Areas')
+p1 = plot(wavemean, area_model/max(area_model), /over, color='red')
+
+
+; plot interp
 p1 = plot( wavecen, area_data / area_model, symbol='o' )
 
 
-;; Save to file
-;openw,1,'n2_IUVS_inverse_sens_calculated.txt'
-;printf,1,'# index   wavemean[nm]   inverse_sens   sensitivity'
-;FOR i = 0, n_peaks-1 DO printf,1,i, wavemean[i], sinv[i], sens[i]
-;close,1
-
 ; Plot sensitivity curves
-;aaa = max(sinv)
-;xvector = [120, 125]
-;yvector1 = [aaa*0.95, aaa*0.95]
-;yvector2 = [aaa*0.90, aaa*0.90]
-
 p0 = plot(wavemean, sinv, $
   xrange=[120,175], xtitle='Wavelength (nm)', ytitle='Inverse Sensitivity (arb units)', $
   color='black', thick=2, title='IUVS BB Inverse Sensitivity')
@@ -278,11 +298,12 @@ p1 = plot(wavemean, sens * 5.0, /over, color='red', linestyle=2, thick=2)
 
 ; Optional: Apply interpolated sensitivity to full data
 sens_interp = interpol(sens, wavemean, wl_shifted, /spline) > 0
-sigcal = siguncal / sens_interp  ; calibrated spectrum
+sigcal = signorm / sens_interp  ; calibrated spectrum
 
 ndx_bad = where( finite(sigcal) eq 0 )
 sigcal[ndx_bad] = 0.
 
+; plot interpolated curve fit
 p1 = plot( wavemean, sens, symbol='o' )
 p2 = plot( wl_shifted, sens_interp, color='red', /over )
 
@@ -290,16 +311,23 @@ p2 = plot( wl_shifted, sens_interp, color='red', /over )
  max_val = max(sigcal, max_cal_idx)
  ;max_cal_idx = where(sigcal EQ max_val, count)
 
-; Plot LBH model (normalized)
-p0 = plot(wave[*]/10.0, lbh_total / lbh[385,3], $
+; Plot LBH model (normalized) and calibrated data
+cal_idx = where(abs(wl_shifted - 135.5) lt 0.2, count)
+model_idx = where(abs(wave/10.0 - 135.5) lt 0.2, count)
+model_peak = max(lbh_total[model_idx])
+data_peak = max(sigcal[cal_idx])
+
+model_norm = lbh_total / model_peak
+data_norm = sigcal / data_peak
+
+p0 = plot(wave[*]/10.0, model_norm, $
   color='red', linestyle=0, thick=2, $
   xr=[120,180], $
   xtitle='Wavelength (nm)', $
   ytitle='Total LBH Intensity (arb units)', $
   title='Model vs. Calibrated Data', yr=[0,1.5])
 
-; Plot calibrated data
-p1 = plot(wl_shifted, sigcal/sigcal[max_cal_idx]*30., /over, color='black', linestyle=2, thick=2)
+p1 = plot(wl_shifted, data_norm, /over, color='black', linestyle=2, thick=2)
 
 stop
 end
