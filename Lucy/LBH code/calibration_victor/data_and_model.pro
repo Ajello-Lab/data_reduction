@@ -161,13 +161,13 @@ sig = signorm
   
   ; PLOT SEPERATE v' ***
   
-  p0 = plot( wave[0:1799]/10.0,lbh[0:1799,0]/lbh[385,3], xr=[120,180],name="v'=0",yr=[0,1.5], color='black',layout=[1,1,1],XTITLE='Wavelength (nm)', YTITLE=" Relative Intensity of v'  [arb units]",title=" LBH relative intensity with v'")
-  p1 = plot( wave[0:1799]/10.0, lbh[0:1799,1]/lbh[385,3], /over, color='red',name='v1' )
-  p2 = plot( wave[0:1799]/10.0,  LBH[0:1799,2]/lbh[385,3], /over, color='blue' ,name='v2')
-  p3 = plot( wave[0:1799]/10.0,  LBH[0:1799,3]/lbh[385,3], /over, color='coral' ,name='v3')
-  p4 = plot( wave[0:1799]/10.0,  LBH[0:1799,4]/lbh[385,3], /over, color='green' ,name='v4')
-  p5 = plot( wave[0:1799]/10.0,  LBH[0:1799,5]/lbh[385,3], /over, color='violet' ,name='v5')
-  p6 = plot( wave[0:1799]/10.0,  LBH[0:1799,6]/lbh[385,3], /over, color='orange' ,name='v6')
+  p0 = plot( wave[*]/10.0,lbh[0:1799,0]/lbh[385,3], xr=[120,180],name="v'=0",yr=[0,1.5], color='black',layout=[1,1,1],XTITLE='Wavelength (nm)', YTITLE=" Relative Intensity of v'  [arb units]",title=" LBH relative intensity with v'")
+  p1 = plot( wave[*]/10.0, lbh[0:1799,1]/lbh[385,3], /over, color='red',name='v1' )
+  p2 = plot( wave[*]/10.0,  LBH[0:1799,2]/lbh[385,3], /over, color='blue' ,name='v2')
+  p3 = plot( wave[*]/10.0,  LBH[0:1799,3]/lbh[385,3], /over, color='coral' ,name='v3')
+  p4 = plot( wave[*]/10.0,  LBH[0:1799,4]/lbh[385,3], /over, color='green' ,name='v4')
+  p5 = plot( wave[*]/10.0,  LBH[0:1799,5]/lbh[385,3], /over, color='violet' ,name='v5')
+  p6 = plot( wave[*]/10.0,  LBH[0:1799,6]/lbh[385,3], /over, color='orange' ,name='v6')
   
   ;p7 = plot(wl-6.25,  signorm, /over, color='black', linestyle=5, name='data')
 
@@ -190,7 +190,7 @@ sig = signorm
  ; PLOT SUM v' ***
   lbh_total = total(lbh[0:1799, *], 2)  ; Sum over vibrational levels
   
-  p0 = plot(wave[0:1799]/10.0, lbh_total / lbh[385,3], $
+  p0 = plot(wave[*]/10.0, lbh_total / lbh[385,3], $
           xr=[120,180], color='red', linestyle=0, $
           XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", $
           title="LBH Model (Summed)", name='model sum')
@@ -207,8 +207,8 @@ stop
 ; why not take avg difference between model and data heights per peak to get calibration number then add it?
 
 ; area method
-wl_start = [126.0, 128.8, 131.7, 134.4, 137.3, 140.3, 143.7, 145.4, 152.1, 154.4, 162.0, 168.1]
-wl_end =   [128.2, 130.5, 134.2, 136.2, 139.1, 142.1, 145.4, 148.0, 154.0, 156.8, 163.5, 169.5]
+wl_start = [126.0, 128.8, 131.9, 134.7, 137.5, 140.4, 143.9, 145.7, 152.2, 155, 159.7, 162.2, 165.4, 168.3, 173, 174.5, 177.9]
+wl_end =   [128.2, 130.5, 133.4, 136.3, 139.3, 142.3, 145.5, 148.4, 154.0, 156.8, 160.7, 164, 166.7, 169.8, 174.4, 176.2, 179.5]
 n_peaks = n_elements(wl_start)
 
 
@@ -291,7 +291,7 @@ p2 = plot( wl_shifted, sens_interp, color='red', /over )
  ;max_cal_idx = where(sigcal EQ max_val, count)
 
 ; Plot LBH model (normalized)
-p0 = plot(wave[0:1799]/10.0, lbh_total / lbh[385,3], $
+p0 = plot(wave[*]/10.0, lbh_total / lbh[385,3], $
   color='red', linestyle=0, thick=2, $
   xr=[120,180], $
   xtitle='Wavelength (nm)', $
