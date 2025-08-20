@@ -17,30 +17,34 @@ pro ajello_lab_gold_process_driver
   source_routine = file_basename(routine_filepath(),'.pro')
 
   ajello_lab_set_paths
-  path_base = !path_base+path_sep()+'GOLD' + path_sep()
+  path_base = !path_base+'GOLD' + path_sep()
 
   data_set_id = 'big_e-gun_round_2'
   data_set_id = 'big_e-gun_round_3'
-  path_data = file_search( path_base+path_sep()+data_set_id+path_sep(), 'test*', /test_dir, count=num_data_sets )
+  data_set_id = 'kimball_egun_round_11'
+  path_data = file_search( path_base + data_set_id + path_sep(), 'test*', /test_dir, count=num_data_sets )
   if num_data_sets eq 0 then begin
     print, 'no data found'
     stop
   endif
 
-  ;
-  ; eliminate "backup" data sets, which were terminated early due to some anomaly 
-  ;
-  pos_backup = strpos( path_data, 'backup' )
-  ndx_good = where( pos_backup eq -1 )
-  path_data = path_data[ndx_good]
-  num_data_sets = n_elements(path_data)
-  
-  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_2/N2/30eV/low_pres/'
-  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_2/N2/100eV/low_pres/'
-  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_3/CO2_CO/'
-  path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_3/CO2/'
-  path_data = file_search( path1, 'test*', /test_dir, count=num_data_sets )
-  
+;  ;
+;  ; eliminate "backup" data sets, which were terminated early due to some anomaly 
+;  ;
+;  pos_backup = strpos( path_data, 'backup' )
+;  ndx_good = where( pos_backup eq -1 )
+;  path_data = path_data[ndx_good]
+;  num_data_sets = n_elements(path_data)
+;  
+;  ; /Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/kimball_egun_round_11/N2/100eV/hi-pres/test2_image1
+;
+;  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_2/N2/30eV/low_pres/'
+;  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_2/N2/100eV/low_pres/'
+;  ;path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_3/CO2_CO/'
+;  path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_3/CO2/'
+;  path1 = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/kimball_egun_round_11/N2/100eV/hi-pres/'
+;  path_data = file_search( path1, 'test*', /test_dir, count=num_data_sets )
+;  
 
 
 ;  path_data = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_1/N2/40eV/med_pres/test1_image1/'
@@ -49,7 +53,7 @@ pro ajello_lab_gold_process_driver
   ;
   ; Define the path where summary images and save files will be stored. 
   ;
-  path_save = path_base + path_sep() + data_set_id + path_sep() + 'data_reduction' + path_sep()
+  path_save = path_base + data_set_id + path_sep() + 'data_reduction' + path_sep()
   
   ;
   ; pulse height filter thresholds
@@ -57,6 +61,7 @@ pro ajello_lab_gold_process_driver
   ;
   pmin = 0
   pmax = 250
+  pmin = 112
   
   ; incomplete:
   ;/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_2/N2/15eV/med_pres/test3_image3/GOLD_15eV_N2_1e-5_test3_image3_20200128_211015.fits-001.fits
@@ -71,14 +76,15 @@ pro ajello_lab_gold_process_driver
     print, i+1, ' of ', num_data_sets, ' datasets'
     print, 'path = ', path_data[i]
     print, ' '
-    ajello_lab_gold_process, path_data[i], wl, xp, yp, cbin, phd, hdr_list, plt, plt_phd_bin, pmin=pmin, pmax=pmax, buffer=1
+    ajello_lab_gold_process, path_data[i], wl, xp, yp, cbin, phd, hdr_list, $
+      plt, plt_phd_bin, pmin=pmin, pmax=pmax, buffer=1
     
     ;ajello_lab_gold_phd_segmentation, path_data[i], plt_phd_bin
     
     str = strsplit(path_data[i],path_sep(),/extract)
 
     ;path_save = '/Users/holsclaw/GOLD/data/big_e-gun_round_1/data_reduction/'
-    path_save = path_base+path_sep()+data_set_id+path_sep()+'data_reduction'+path_sep()
+    ;path_save = path_base+path_sep()+data_set_id+path_sep()+'data_reduction'+path_sep()
     
     file_phdbin_png  = path_save + str[-4] + '_' + str[-3] + '_' + str[-2] + '_' + str[-1] + '_pbin.png'
     file_summary_png = path_save + str[-4] + '_' + str[-3] + '_' + str[-2] + '_' + str[-1] + '_pmax_' + string(pmax,format='(I03)') + '.png'

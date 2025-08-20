@@ -3,24 +3,35 @@
 ; AJELLO_LAB_GOLD_PROCESS
 ; 
 ; PURPOSE:
-; This routine will co-add all data in a given path, returning a binned 2D array
+; This routine will co-add all data in a given path, returning a binned 
+;  2D array
 ;   
 ; INPUTS:
-; path: Full path to one set of data files collected using the GOLD engineering model.
+; path: Full path to one set of data files collected using the GOLD 
+;       engineering model.
 ; 
 ; KEYWORDS:
-; pmin: (optional) Photoevents less than this value will be excluded from cbin.  Default is 0.
-; pmax: (optional) Photoevents greater than this value will be excluded from cbin.  Default is 255.
-; buffer: (optional) Set to one to prevent the summary image from being displayed to the screen.
+; pmin: (optional) Photoevents less than this value will be excluded from 
+;       cbin.  Default is 0.
+; pmax: (optional) Photoevents greater than this value will be excluded from 
+;       cbin.  Default is 255.
+; buffer: (optional) Set to one to prevent the summary image from being 
+;         displayed to the screen.
 ;   
 ; OUTPUTS:
 ; cbin: 2D array containing the binned and co-added data.
+; 
 ; phd: Summed pulse height vector, 256 elements.
-; hdr_list: list data type with each element containing the contents of the FITS header
+; 
+; hdr_list: list data type with each element containing the contents of 
+;  the FITS header
+;  
 ; plt: plot handle, which can be used to save the contents.
-; plt_pbin:plot handle, which can be used to save the contents.
+; 
+; plt_pbin: plot handle, which can be used to save the contents.
 ;-
-pro ajello_lab_gold_process, path, wl, xp, yp, cbin, phd, hdr_list, plt, plt_pbin, pmin=pmin, pmax=pmax, buffer=buffer
+pro ajello_lab_gold_process, path, wl, xp, yp, cbin, phd, hdr_list, $
+  plt, plt_pbin, pmin=pmin, pmax=pmax, buffer=buffer
 
 if n_params() eq 0 then begin
   path = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_1/N2/100eV/medium_press/test1_image1/'
@@ -28,6 +39,7 @@ if n_params() eq 0 then begin
   
   pmin = 0.
   pmax = 250 
+  pmax = 63
   ;pmax = 255
 endif
 
@@ -43,28 +55,39 @@ if nfiles eq 0 then begin
   stop
 endif
 
-print, file[0]
+;print, file[0]
+;
+;test_flag = bytarr(nfiles)
+;pos = intarr(nfiles)
+;;for i = 0, nfiles -1  do pos[i] = strpos( file_basename(file[i]), 'fits-' )
+;for i = 0, nfiles -1  do pos[i] = strpos( file_basename(file[i]), '.fits' )
+;ndx_valid = where( pos ne -1, count )
+;if count eq 0 then begin
+;  print, 'no files left after filter'
+;  return
+;  stop
+;endif
+;file = file[ndx_valid]
+;nfiles = n_elements(file)
 
-test_flag = bytarr(nfiles)
-pos = intarr(nfiles)
-for i = 0, nfiles -1  do pos[i] = strpos( file_basename(file[i]), 'fits-' )
-ndx_valid = where( pos ne -1, count )
-if count eq 0 then begin
-  print, 'no files left after filter'
-  return
-  stop
-endif
-file = file[ndx_valid]
-nfiles = n_elements(file)
-
+;
+; define window subregion as a four element vector, [ x1, y1, x2, y2 ]
+;  Taken from Alan's plots
+;
 wind = [ 1011, 1369, 2667, 2641 ]
-;ajello_lab_read_gold_data, file[0], plt, cbini, wind=wind, pmin=pmin, pmax=pmax ;, noplot=noplot
+
+;
+; read in each data file
+; filter by the provided pulse height
+; sum the binned images 
+;
 cbin = 0.
 phd = 0.
 data = []
 hdr_list = list()
 for i = 0, nfiles - 1 do begin
-  ajello_lab_gold_read_data, file[i], datai, hdri, cbini, phdi, plti, wind=wind, pmin=pmin, pmax=pmax, /noplot, err=err
+  ajello_lab_gold_read_data, file[i], datai, hdri, cbini, phdi, plti, $
+    wind=wind, pmin=pmin, pmax=pmax, /noplot, err=err
   if err eq 0 then begin
     cbin += cbini
     phd += phdi
@@ -78,6 +101,9 @@ y1 = wind[1]
 x2 = wind[2]
 y2 = wind[3]
 
+;
+; bin the data across a range of pulse height ranges
+;
 binsize = 16
 bin = findgen(256./binsize)*binsize
 nbin = n_elements(bin)
@@ -85,12 +111,20 @@ cbin_pbin = fltarr( x2-x1+1, y2-y1+1, nbin )
 for i = 0, nbin - 1 do begin
   pmini = bin[i]
   pmaxi = pmini + binsize - 1
-  ndx = where( (data.x gt x1) and (data.x lt x2) and (data.y gt y1) and (data.y lt y2) and (data.p ge pmini) and (data.p le pmaxi), count )
+  ndx = where( $
+    (data.x gt x1) and $
+    (data.x lt x2) and $
+    (data.y gt y1) and $
+    (data.y lt y2) and $
+    (data.p ge pmini) and $
+    (data.p le pmaxi), count )
   if count gt 0 then $
     cbin_pbin[*,*,i] = float( hist_2d(data[ndx].x, data[ndx].y, min1=x1, min2=y1, max1=x2, max2=y2 ) )
 endfor
 
-
+;
+; show the images for each pulse height range
+;
 plt_pbin = window(dim=[1024,1024],buffer=buffer)
 for i = 0, nbin - 1 do begin
   title = string(bin[i],format='(I3)')+' : '+string([bin[i]+binsize-1],format='(I3)')

@@ -3,7 +3,8 @@
 ; AJELLO_LAB_GOLD_READ_DATA
 ; 
 ; PURPOSE:
-; This routine will read in a FITS-format data file from the GOLD breadboard, and return a spatially binned 2D array.
+; This routine will read in a FITS-format data file from the GOLD breadboard, 
+;  and return a spatially binned 2D array.
 ;
 ; INPUTS:
 ; file: filename of the data file to read
@@ -12,11 +13,18 @@
 ; wind: window subregion as a four element vector, [ x1, y1, x2, y2 ]
 ; 
 ; OUTPUTS:
+; data: raw object returnd from mrdfits of the first HDU
+; hdr: header object returnd from mrdfits of the first HDU
 ; cbin: binned counts 2D image
 ; phd: pulse-height distribution of the unfiltered data
 ; plt: plot handle, which can be used to save the contents.
 ;-
-pro ajello_lab_gold_read_data, file, data, hdr, cbin, phd, plt, wind=wind, pmin=pmin, pmax=pmax, noplot=noplot, err=err
+pro ajello_lab_gold_read_data, file, data, hdr, cbin, phd, plt, $
+  wind=wind, $
+  pmin=pmin, $
+  pmax=pmax, $
+  noplot=noplot, $
+  err=err
 
 err = 0
 
@@ -59,9 +67,19 @@ if sz.type_name eq 'LONG' then begin
 endif
 ;obs_time = sxpar(hdr_data, 'OBSTIME')
 
-ndx_spat_only = where( (data.x gt x1) and (data.x lt x2) and (data.y gt y1) and (data.y lt y2), count )
+ndx_spat_only = where( $
+  (data.x gt x1) and $
+  (data.x lt x2) and $
+  (data.y gt y1) and $
+  (data.y lt y2), count )
 
-ndx = where( (data.x gt x1) and (data.x lt x2) and (data.y gt y1) and (data.y lt y2) and (data.p ge pmin) and (data.p le pmax), count )
+ndx = where( $
+  (data.x gt x1) and $
+  (data.x lt x2) and $
+  (data.y gt y1) and $
+  (data.y lt y2) and $
+  (data.p ge pmin) and $
+  (data.p le pmax), count )
 
 ;
 ;
