@@ -11,9 +11,13 @@ user_name = (get_login_info()).user_name
 case user_name of
   'lufa5942': begin
     path_lab_data = "\\lasp-store\projects\Phase_Development\MAVEN\IUVS_Data\IUVS_Breadboard\GOLD\kimball_egun_round_11\data_reduction\"
+    file_model = "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav" ; temporary lucy
   end
   'holsclaw': begin
+    ajello_lab_set_paths, path_base, path_repo
     path_lab_data =  '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/kimball_egun_round_11/data_reduction/'
+    file_model = path_repo + 'Lucy' + path_sep() + 'LBH code' + path_sep() + 'calibration_victor' + path_sep() + 'n2_lbh_rot_293K.sav'   ; LBH model
+    ;'/Users/holsclaw/Ajello-Lab/data_reduction/Lucy/LBH code/calibration_victor/n2_lbh_rot_293K.sav'
   end
   else:begin
     print, 'Unknown user: Create a new entry of path_lab_data for this case statement'
@@ -25,8 +29,6 @@ file_r = routine_filepath()
 path_repo = file_dirname(file_r,/MARK_DIRECTORY)
 
 file_data = path_lab_data + "N2_16ev_hi_pres_test19_image1_pmax_250.sav"  ; 16eV img1     ; 'N2_100eV_hi-pres_test2_image1_pmax_250.sav' (100eV img1)
-file_model = path_repo + 'Lucy' + path_sep() + 'LBH code' + path_sep() + 'calibration_victor' + path_sep() + 'n2_lbh_rot_293K.sav'   ; LBH model
-file_model = "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav" ; temporary lucy
 
 ; =============  DATA =============
  
@@ -42,7 +44,7 @@ file_model = "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibrati
 ;  % RESTORE: Restored variable: VAR_DESC.
 ;  % RESTORE: Restored variable: SOURCE_ROUTINE.
 ;  % RESTORE: Restored variable: PROCESS_TIME.
-
+wl_data = wl
 
 
 
@@ -55,7 +57,7 @@ spec = total( cbin, 2 )
 ; isolate the spatial region with high signal and low contamination
 ;
 spat_max = max( spat, ndx_spat_max )
-w_spat = 30
+w_spat = 150
 y1 = ndx_spat_max - w_spat
 y2 = ndx_spat_max + w_spat
 
@@ -109,17 +111,6 @@ p = plot( g2 )
 
 
 
-; ============= PSF =============
-
-ajello_lab_scaled_gold_psf_model, psf
-
-xp = findgen(x2-x1+1)
-
-p = plot( xp, y )
-p2 = plot( psf*max(y)/max(psf), /over, color='red' )
-
-
-
 
 ; ============= LBH MODEL =============
 
@@ -134,8 +125,18 @@ p2 = plot( psf*max(y)/max(psf), /over, color='red' )
 wave_nm = wave/10.  ; angstroms to nm
 wl_nm = wl/10
 
+; ============= PSF =============
+
+ajello_lab_scaled_gold_psf_model, wave, psf_mod
+
+;xp = findgen(x2-x1+1)
+;
+;p = plot( xp, y )
+;p2 = plot( psf*max(y)/max(psf), /over, color='red' )
+
+
   for i=0, ((size(lbh))[2]-1) do begin   ; joe added this loop?
-    lbh[*, i] = convol(lbh[*, i], psf)
+    lbh[*, i] = convol(lbh[*, i], psf_mod)
   endfor
   
   lbh_total = total(lbh, 2)  ; Sum over vibrational levels
@@ -161,6 +162,12 @@ p8 = plot(wave_nm, lbh_total / lbh[385,3],xr=[120,180], color='red', linestyle=0
 p9 = plot(wave_nm, spec/8.1, /over, color='black', linestyle=5, name='data' )
 leg = legend(target=[p8, p9], position=[175,1.0], /data, /auto_text_color)
 
+lbh_total_max = max(lbh_total, ndx_lbh_max)
+spec_max = max(spec, ndx_spec_max)
+wl_data_shift = wl_data - wl_data[ndx_spec_max] + wave_nm[ndx_lbh_max]
+
+p1 = plot( wave_nm, lbh_total / max(lbh_total) )
+p2 = plot( wl_data_shift, spec / max(spec), /over, color='red' )
 
 ; ============= CALIBRATION =============
 
