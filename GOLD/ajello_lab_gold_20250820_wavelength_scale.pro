@@ -68,8 +68,9 @@ p = plot( g2 )
 ajello_lab_scaled_gold_psf_model, psf
 
 xp = findgen(x2-x1+1)
+
 p = plot( xp, y )
-p2 = plot( psf, /over )
+p2 = plot( psf*max(y)/max(psf), /over, color='red' )
 
 stop
 

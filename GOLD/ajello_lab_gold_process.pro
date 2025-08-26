@@ -31,7 +31,10 @@
 ; plt_pbin: plot handle, which can be used to save the contents.
 ;-
 pro ajello_lab_gold_process, path, wl, xp, yp, cbin, phd, hdr_list, $
-  plt, plt_pbin, pmin=pmin, pmax=pmax, buffer=buffer
+  plt, plt_pbin, pmin=pmin, pmax=pmax, buffer=buffer, filter_str=filter_str, $
+  status=status
+
+status = 0
 
 if n_params() eq 0 then begin
   path = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/GOLD/big_e-gun_round_1/N2/100eV/medium_press/test1_image1/'
@@ -51,8 +54,25 @@ if keyword_set(pmax) eq 0 then pmax = 255
 file = file_search(path,'*.fits', count=nfiles)
 if nfiles eq 0 then begin
   print, 'no files found'
+  status = -1
   return
   stop
+endif
+
+;
+; find all files that contain the string in "filter_str", if it is provided 
+;
+if isa(filter_str) eq 1 then begin
+  pos = strpos( file, filter_str )
+  ndx_pos = where( pos ne -1, count_pos )
+  if count_pos gt 0 then begin
+    file = file[ndx_pos]
+    nfiles = n_elements(file)
+  endif else begin
+    print, 'no files found containing the string: ', filter_str
+    status = -1
+    return
+  endelse
 endif
 
 ;print, file[0]
@@ -81,7 +101,7 @@ wind = [ 1011, 1369, 2667, 2641 ]
 ; filter by the provided pulse height
 ; sum the binned images 
 ;
-cbin = 0.
+cbin_sum = 0.
 phd = 0.
 data = []
 hdr_list = list()
@@ -89,12 +109,14 @@ for i = 0, nfiles - 1 do begin
   ajello_lab_gold_read_data, file[i], datai, hdri, cbini, phdi, plti, $
     wind=wind, pmin=pmin, pmax=pmax, /noplot, err=err
   if err eq 0 then begin
-    cbin += cbini
+    int_time = sxpar( hdri, 'INT-TIME' )
+    cbin_sum += cbini / int_time
     phd += phdi
     data = [data,datai]
     hdr_list.add,hdri
   endif
 endfor
+cbin = cbin_sum / nfiles
 
 x1 = wind[0]
 y1 = wind[1]
