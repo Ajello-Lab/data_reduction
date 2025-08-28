@@ -110,8 +110,6 @@ g2 = gaussian_function( afit[2], /normalize )
 p = plot( g2 )
 
 
-
-
 ; ============= LBH MODEL =============
 
   restore, file_model, /relax
@@ -166,27 +164,33 @@ lbh_total_max = max(lbh_total, ndx_lbh_max)
 spec_max = max(spec, ndx_spec_max)
 wl_data_shift = wl_data - wl_data[ndx_spec_max] + wave_nm[ndx_lbh_max]
 
-p1 = plot( wave_nm, lbh_total / max(lbh_total) )
-p2 = plot( wl_data_shift, spec / max(spec), /over, color='red' )
+
+; Plot uncal data vs model
+p1 = plot( wave_nm, lbh_total / max(lbh_total), color='red', title='uncal data vs model', name = 'model')
+p2 = plot( wl_data_shift, spec / max(spec), /over, linestyle=2, name= 'data')
+leg = legend(target=[p1, p2], position=[180,0.8], /data, /auto_text_color)
+
+
+; plot zoomed in model to get channel nums
+p0 = plot( wave_nm, lbh_total / max(lbh_total), color='red', title='model zoom', xr = [130,165])
+
+
 
 ; ============= CALIBRATION =============
 
 ; area method
-wl_start = [145.9, 148.6, 151.8, 154.7, 156.3, 159.9, 162.5, 166.5, 169.0, 172.0, 174.7]
-wl_mid = [146.5, 149.3, 152.4, 155.6, 156.9, 160.4, 163.2, 166.9, 169.3, 172.3, 175.1]
-wl_end =  [147.1, 150.2, 153.0, 156.2, 157.4, 161.0, 163.7, 167.4, 170.3, 173.0, 176.0]
+wl_start = [130.7, 132.0, 133.5, 134.8, 137.6, 140.7, 142.32, 145.8, 147.1, 149.8, 151.3, 152.6, 157.0, 159.6, 160.72]
+wl_end =  [131.9, 133.4, 134.7, 136.3, 139.2, 142.3, 143.9, 147.0, 148.4, 150.5, 152.1, 153.7, 158.1, 160.7, 162.2]
 n_peaks = n_elements(wl_start)
 
 ; plot model, data, and bands (ranges)
-p0 = plot(wave_nm, lbh_total / lbh[385,3], $
-  xr=[120,180], color='red', linestyle=0, $
-  XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", $
-  title="LBH Model (Summed)", name='model sum')
-p1 = plot( wl_nm,  spec, /over, color='black', linestyle=5, name='data' )
+p0 = plot(wave_nm, lbh_total / max(lbh_total),  xr=[120,180], color='red', linestyle=0, $
+  XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", title="peak ranges")
+p1 = plot(wl_data_shift, spec / max(spec), /over, color='black', linestyle=2)
 for i = 0, n_peaks - 1 do $
   plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
 
-;p0.save, "Z:\Lucy's codes, plots\GOLD\JPG plots\data_uncal_band_ranges.png"
+p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\data_uncal_band_ranges.png"
 
 
 ; initialize arrays
@@ -204,14 +208,14 @@ sens = fltarr(n_peaks)
 ;spec = spec[19:1643]
 
 for i = 0, n_peaks - 1 do begin
-  ndx_data = where( (wl_nm gt wl_start[i]) and (wl_nm lt wl_end[i]) )
+  ndx_data = where( (wl_data_shift gt wl_start[i]) and (wl_data_shift lt wl_end[i]) )
   area_data[i] = total( spec[ndx_data] )
 
   ndx_model = where( (wave_nm gt wl_start[i]) and (wave_nm lt wl_end[i]) )
   area_model[i] = total( lbh_total[ndx_model] )
 
   ; average wavelength
-  wavemean[i] = mean( wl_nm[ndx_data] )
+  wavemean[i] = mean(wl_data_shift[ndx_data] )
 
   ; centroid wavelength
   wavecen[i] = total( (wave_nm[ndx_model]) * (lbh_total[ndx_model]) ) / total( lbh_total[ndx_model] )
@@ -223,25 +227,25 @@ sens=1./sinv
 
 ; plot interp fit
 ; Apply interpolated sensitivity to full data
-sens_interp = interpol(sens, wavemean, wl_nm, /spline) > 0
-invsens_interp = interpol(1/sens, wavemean, wl_nm, /spline) > 0
+sens_interp = interpol(sens, wavemean, wl_data_shift, /spline) > 0
+invsens_interp = interpol(1/sens, wavemean, wl_data_shift, /spline) > 0
 sigcal = spec / sens_interp  ; calibrated spectrum
-
 ndx_bad = where( finite(sigcal) eq 0 )
 sigcal[ndx_bad] = 0.
 
 ; plot interpolated curve fit and invinterp
-p1 = plot( wavemean, sens, symbol='o', thick=2, title = 'interp', xrange = [140,180], yrange = [-5,5] )
-p2 = plot( wl_nm, sens_interp, color='red', /over )
+p1 = plot( wavemean, sens, symbol='o', thick=2, title = 'interp' )
+p2 = plot( wl_data_shift, sens_interp, color='red', /over )
+p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\cal_interp_curvefit.png"
 
-p1 = plot( wavemean, 1/sens, symbol='o',  yrange=[-2,300], xrange = [140,181], thick=2, title = 'inv interp')
-p2 = plot( wl_nm, invsens_interp, color='red', /over )
+p1 = plot( wavemean, 1/sens, symbol='o', thick=2, title = 'inv interp')
+p2 = plot( wl_data_shift, invsens_interp, color='red', /over )
 ;p1.save, "Z:\Lucy's codes, plots\GOLD\JPG plots\cal_invinterp_curvefit.png"
 
 ; normalize
 max_val = max(sigcal, max_cal_idx)
-cal_idx = where(abs(wl_nm - 149.3) lt 0.2, count)
-model_idx = where(abs(wave_nm- 149.3) lt 0.2, count)
+cal_idx = where(abs(wl_data_shift - 135.3) lt 0.2, count)
+model_idx = where(abs(wave_nm- 135.3) lt 0.2, count)
 model_peak = max(lbh_total[model_idx])
 data_peak = max(sigcal[cal_idx])
 
@@ -249,15 +253,12 @@ model_norm = lbh_total / model_peak
 data_norm = sigcal / data_peak
 
 ; plot final cal data and model
-p0 = plot(wave_nm, model_norm, $
-  color='red', linestyle=0, thick=2, $
-  xr=[120,180], yr = [0,3], $
-  xtitle='Wavelength (nm)', $
-  ytitle='Total LBH Intensity (arb units)', $
-  title='Model vs. Calibrated Data')
-p1 = plot(wl_nm, data_norm, /over, color='black', linestyle=2, thick=2)
+p0 = plot(wave_nm, model_norm, color='red', linestyle=0, thick=2, xr=[120,180], yr = [0,1.1], $
+  xtitle='Wavelength (nm)', ytitle='Total LBH Intensity (arb units)', title='Model vs. Calibrated Data', name = 'model')
+p1 = plot(wl_data_shift, data_norm, /over, color='black', linestyle=2, thick=2, name = 'calibrated data')
+leg = legend(target=[p0, p1], position=[170,0.8], /data, /auto_text_color)
 
-; p0.save, "Z:\Lucy's codes, plots\GOLD\JPG plots\caldata_and_model"
+ p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\caldata_and_model.png"
 
 
 stop
