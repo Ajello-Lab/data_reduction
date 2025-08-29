@@ -16,7 +16,10 @@ pro ajello_lab_scaled_gold_psf_model, wl_ang, psf
 
 ; Gaussian fit parameters to the 1493 line in wavelength space
 ;  center wavelength and standard deviation in angstroms
-afit = [ 150880.09, 1493.3298, 1.5506437 ]
+;afit = [ 150880.09, 1493.3298, 1.5506437 ]
+;
+; empirical adjustment when fitting an N2 spectrum to a model
+afit = [ 150880.09, 1493.3298, 1.5506437*0.7 ]
 
 ; GOLD EM dispersion: 0.1943 angstroms / pixel
 ;disp = 0.1943  ; angstrom/pixel

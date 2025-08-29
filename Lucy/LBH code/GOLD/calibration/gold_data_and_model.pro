@@ -74,40 +74,40 @@ p = plot( wl, spec, xtitle='wavelength (nm)' )
 ;
 ; isolate the 1493 emission line
 ;
-spec_max = max( spec, ndx_spec_max )
-w_spec = 30
-x1 = ndx_spec_max - w_spec
-x2 = ndx_spec_max + w_spec
-
-p = plot( spec[x1:x2] )
-
-wl2 = 0.1943 * findgen(4096) + 1187 + 145.70251
-wl3 = 0.1943 * findgen(4096) + 1332.7025
-
-wl = wl1 - wl1[ndx_spec_max] + 1493.
-
-p = plot( wl, spec )
-
-img = image( cbin, min_value=0, max_value=100 )
-
-p = plot( wl - wl2 )
-
-
-x = wl[x1:x2]
-y = spec[x1:x2]
-
-g = gaussfit( x, y, afit, nterms=3 )
-
-p = plot( x, y )
-p2 = plot( x, g, /over, color='red' )
-
-ajello_lab_gold_em_psf_model, x, afit, f
-
-p = plot( x, f )
-
-g2 = gaussian_function( afit[2], /normalize )
-
-p = plot( g2 )
+;spec_max = max( spec, ndx_spec_max )
+;w_spec = 30
+;x1 = ndx_spec_max - w_spec
+;x2 = ndx_spec_max + w_spec
+;
+;p = plot( spec[x1:x2] )
+;
+;wl2 = 0.1943 * findgen(4096) + 1187 + 145.70251
+;wl3 = 0.1943 * findgen(4096) + 1332.7025
+;
+;wl = wl1 - wl1[ndx_spec_max] + 1493.
+;
+;p = plot( wl, spec )
+;
+;img = image( cbin, min_value=0, max_value=100 )
+;
+;p = plot( wl - wl2 )
+;
+;
+;x = wl[x1:x2]
+;y = spec[x1:x2]
+;
+;g = gaussfit( x, y, afit, nterms=3 )
+;
+;p = plot( x, y )
+;p2 = plot( x, g, /over, color='red' )
+;
+;ajello_lab_gold_em_psf_model, x, afit, f
+;
+;p = plot( x, f )
+;
+;g2 = gaussian_function( afit[2], /normalize )
+;
+;p = plot( g2 )
 
 
 ; ============= LBH MODEL =============
@@ -164,6 +164,22 @@ lbh_total_max = max(lbh_total, ndx_lbh_max)
 spec_max = max(spec, ndx_spec_max)
 wl_data_shift = wl_data - wl_data[ndx_spec_max] + wave_nm[ndx_lbh_max]
 
+;
+; this is an empirical wavelength scale adjustment, found by fitting a 4th
+; order polynomial to the difference in the feature centroid wavelengths
+; between that in the data and the model.
+;
+pfit = [$
+  563.88849, $
+  -16.563009, $
+    0.18100439, $
+   -0.00087277917, $
+    1.5674600e-06 ]
+wl_data_distortion_correction = poly( wl_data_shift, pfit )
+;
+; apply adjustment to the wavelength-shifted data
+;
+wl_data_shift -= wl_data_distortion_correction
 
 ; Plot uncal data vs model
 p1 = plot( wave_nm, lbh_total / max(lbh_total), color='red', title='uncal data vs model', name = 'model')
@@ -179,8 +195,8 @@ p0 = plot( wave_nm, lbh_total / max(lbh_total), color='red', title='model zoom',
 ; ============= CALIBRATION =============
 
 ; area method
-wl_start = [130.7, 132.0, 133.5, 134.8, 137.6, 140.7, 142.32, 145.8, 147.1, 149.8, 151.3, 152.6, 157.0, 159.6, 160.72]
-wl_end =  [131.9, 133.4, 134.7, 136.3, 139.2, 142.3, 143.9, 147.0, 148.4, 150.5, 152.1, 153.7, 158.1, 160.7, 162.2]
+wl_start = [130.7, 132.0, 133.5, 134.8, 136.4, 137.6, 139.3, 140.7, 142.32, 144.0, 145.8, 147.1, 148.5, 149.8, 150.55, 151.3, 152.6, 155.1, 157.0, 158.15, 159.6, 160.72]
+wl_end =  [ 131.9, 133.4, 134.7, 136.3, 137.5, 139.2, 140.6, 142.3, 143.90, 145.7, 147.0, 148.4, 149.7, 150.5, 151.25, 152.1, 153.7, 156.7, 158.1, 159.50, 160.7, 162.20]
 n_peaks = n_elements(wl_start)
 
 ; plot model, data, and bands (ranges)
@@ -188,9 +204,10 @@ p0 = plot(wave_nm, lbh_total / max(lbh_total),  xr=[120,180], color='red', lines
   XTITLE='Wavelength (nm)', YTITLE="Total LBH Intensity (arb units)", title="peak ranges")
 p1 = plot(wl_data_shift, spec / max(spec), /over, color='black', linestyle=2)
 for i = 0, n_peaks - 1 do $
-  plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
+  plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], $
+  /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
 
-p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\data_uncal_band_ranges.png"
+;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\data_uncal_band_ranges.png"
 
 
 ; initialize arrays
@@ -202,7 +219,8 @@ wavemean   = fltarr(n_peaks)
 area_data = fltarr(n_peaks)
 area_model = fltarr(n_peaks)
 wavemean = fltarr(n_peaks)
-wavecen = fltarr(n_peaks)
+wave_model_cen = fltarr(n_peaks)
+wave_data_cen = fltarr(n_peaks)
 sinv = fltarr(n_peaks)
 sens = fltarr(n_peaks)
 ;spec = spec[19:1643]
@@ -218,8 +236,20 @@ for i = 0, n_peaks - 1 do begin
   wavemean[i] = mean(wl_data_shift[ndx_data] )
 
   ; centroid wavelength
-  wavecen[i] = total( (wave_nm[ndx_model]) * (lbh_total[ndx_model]) ) / total( lbh_total[ndx_model] )
+  wave_model_cen[i] = total( (wave_nm[ndx_model]) * (lbh_total[ndx_model]) ) / total( lbh_total[ndx_model] )
+  wave_data_cen[i] = total( (wl_data_shift[ndx_data]) * (spec[ndx_data]) ) / total( spec[ndx_data] )
 endfor
+
+win = window(dim=[800,600])
+p = plot( wave_model_cen, wave_data_cen-wave_model_cen, symbol='o', $
+  xtitle='model feature centroid wavelength (nm)', $
+  ytitle='wavelength difference (nm)', $
+  title='difference in data and model feature centroid wavelength', $
+  font_size=16, thick=2, sym_filled=1, current=win )
+xf = wave_model_cen
+yf = wave_data_cen - wave_model_cen
+pfit = poly_fit( xf, yf, 4, yfit=yfit )
+p2 = plot( xf, yfit, color='red', thick=2, /over )
 
 sinv=area_model/area_data
 sinv=sinv/min(sinv)
@@ -230,13 +260,13 @@ sens=1./sinv
 sens_interp = interpol(sens, wavemean, wl_data_shift, /spline) > 0
 invsens_interp = interpol(1/sens, wavemean, wl_data_shift, /spline) > 0
 sigcal = spec / sens_interp  ; calibrated spectrum
-ndx_bad = where( finite(sigcal) eq 0 )
-sigcal[ndx_bad] = 0.
+ndx_bad = where( finite(sigcal) eq 0, count_bad )
+if count_bad gt 0 then sigcal[ndx_bad] = 0.
 
 ; plot interpolated curve fit and invinterp
 p1 = plot( wavemean, sens, symbol='o', thick=2, title = 'interp' )
 p2 = plot( wl_data_shift, sens_interp, color='red', /over )
-p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\cal_interp_curvefit.png"
+;p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\cal_interp_curvefit.png"
 
 p1 = plot( wavemean, 1/sens, symbol='o', thick=2, title = 'inv interp')
 p2 = plot( wl_data_shift, invsens_interp, color='red', /over )
@@ -258,7 +288,7 @@ p0 = plot(wave_nm, model_norm, color='red', linestyle=0, thick=2, xr=[120,180], 
 p1 = plot(wl_data_shift, data_norm, /over, color='black', linestyle=2, thick=2, name = 'calibrated data')
 leg = legend(target=[p0, p1], position=[170,0.8], /data, /auto_text_color)
 
- p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\caldata_and_model.png"
+ ;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\caldata_and_model.png"
 
 
 stop
