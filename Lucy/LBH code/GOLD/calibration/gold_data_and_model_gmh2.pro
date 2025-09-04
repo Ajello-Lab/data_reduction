@@ -11,7 +11,7 @@ user_name = (get_login_info()).user_name
 case user_name of
   'lufa5942': begin
     path_lab_data = "\\lasp-store\projects\Phase_Development\MAVEN\IUVS_Data\IUVS_Breadboard\GOLD\kimball_egun_round_11\data_reduction\"
-    file_model = "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav" ; temporary lucy
+    file_model = "C:\Users\lufa5942\Documents\data_reduction\Lucy\LBH code\calibration_victor\n2_lbh_rot_293K.sav"
   end
   'holsclaw': begin
     ajello_lab_set_paths, path_base, path_repo
@@ -28,7 +28,13 @@ endcase
 file_r = routine_filepath()
 path_repo = file_dirname(file_r,/MARK_DIRECTORY)
 
-file_data = path_lab_data + "N2_16ev_hi_pres_test19_image1_pmax_250.sav"  ; 16eV img1     ; 'N2_100eV_hi-pres_test2_image1_pmax_250.sav' (100eV img1)
+
+; when changng data set, don't forget to change name of two plots and save file locations
+
+file_data = path_lab_data + "N2_16ev_hi_pres_test19_image1_pmax_250.sav"    ;16eV hi pres
+;file_data = path_lab_data + "N2_16eV_med_pres_test36_image1_pmax_250.sav"   ;16eV med pres
+;file_data = path_lab_data + "N2_40eV_hi_pres_test27_image1_pmax_250.sav"    ;40eV hi pres
+;file_data = path_lab_data + "N2_20eV_hi_pres_test24_image1_pmax_250.sav"    ;20eV hi pres
 
 ; =============  DATA =============
  
@@ -151,8 +157,9 @@ ajello_lab_scaled_gold_psf_model, wave, psf_mod
   p7 = plot( wave_nm, lbh_total/lbh[385,3], /over, color='black', name = 'v sum', thick = 2)
   leg = LEGEND(TARGET=[p0,p1,p2,p3,p4,p5,p6,p7], POSITION=[177,1.1], $
     /DATA, /AUTO_TEXT_COLOR)
+;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\lbh_v's_model.png"    ; model
     
-;print, lbh_total
+
 
 ; plot model over uncal data
 p8 = plot(wave_nm, lbh_total / lbh[385,3],xr=[120,180], color='red', linestyle=0, $
@@ -207,7 +214,10 @@ for i = 0, n_peaks - 1 do $
   plot_handle_shade = plot( [wl_start[i],wl_end[i]], [1,1]*p0.yrange[0], $
   /over, fill_level=p0.yrange[1], /fill_background, fill_transparency=70 )
 
-;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\data_uncal_band_ranges.png"
+;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\med_pres\data_uncal_band_ranges.png"    ; 16eV med pres
+;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\data_uncal_band_ranges.png"     ; 16eV hi pres
+;p0.save, "Z:\Lucy's codes, plots\GOLD\40eV\hi_pres\data_uncal_band_ranges.png"     ; 40eV hi pres
+;p0.save, "Z:\Lucy's codes, plots\GOLD\20eV\hi_pres\data_uncal_band_ranges.png"     ; 20eV hi pres
 
 
 ; initialize arrays
@@ -274,13 +284,17 @@ ndx_bad = where( finite(sigcal) eq 0, count_bad )
 if count_bad gt 0 then sigcal[ndx_bad] = 0.
 
 ; plot interpolated curve fit and invinterp
-p1 = plot( wavemean, sens, symbol='o', thick=2, title = 'interp' )
+p1 = plot( wavemean, sens, symbol='o', thick=2, title = 'interp 16eV med pres' )
 p2 = plot( wl_data_shift, sens_interp, color='red', /over )
-;p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\cal_interp_curvefit.png"
+
+;p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\med_pres\sm_cal_interp_curvefit.png"  ; 16eV med pres
+;p1.save, "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\sm_cal_interp_curvefit.png"   ; 16eV hi pres
+;p1.save, "Z:\Lucy's codes, plots\GOLD\40eV\hi_pres\sm_cal_interp_curvefit.png"   ; 40eV hi pres
+;p1.save, "Z:\Lucy's codes, plots\GOLD\20eV\hi_pres\sm_cal_interp_curvefit.png"   ; 20eV hi pres
+
 
 p1 = plot( wavemean, 1/sens, symbol='o', thick=2, title = 'inv interp')
 p2 = plot( wl_data_shift, invsens_interp, color='red', /over )
-;p1.save, "Z:\Lucy's codes, plots\GOLD\JPG plots\cal_invinterp_curvefit.png"
 
 ; normalize
 max_val = max(sigcal, max_cal_idx)
@@ -294,13 +308,38 @@ data_norm = sigcal / data_peak
 
 ; plot final cal data and model
 p0 = plot(wave_nm, model_norm, color='red', linestyle=0, thick=2, xr=[120,180], yr = [0,1.1], $
-  xtitle='Wavelength (nm)', ytitle='Total LBH Intensity (arb units)', title='Model vs. Calibrated Data', name = 'model')
+  xtitle='Wavelength (nm)', ytitle='Total LBH Intensity (arb units)', title='Model vs. Calibrated Data 16eV hi pres', name = 'model')
 p1 = plot(wl_data_shift, data_norm, /over, color='black', linestyle=2, thick=2, name = 'calibrated data')
 leg = legend(target=[p0, p1], position=[170,0.8], /data, /auto_text_color)
 
- ;p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\caldata_and_model.png"
+; p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\med_pres\sm_caldata_and_model.png"  ; 16eV med pres
+; p0.save, "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\sm_caldata_and_model.png"   ; 16ev hi pres
+; p0.save, "Z:\Lucy's codes, plots\GOLD\40eV\hi_pres\sm_caldata_and_model.png"   ; 40ev hi pres
+; p0.save, "Z:\Lucy's codes, plots\GOLD\20eV\hi_pres\sm_caldata_and_model.png"   ; 20ev hi pres
+
+; ========== save .txt files ================
+;  wl_start, index_start, wl_end, index_end
+
+; for data points: 
+
+dtapts_txt_file = "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\datapts_wl_and_channls.txt"
+openw, lun, out_file, /get_lun
+TAB = string(9B)   ; tab character
+; header line
+printf, lun, 'wl_start' + TAB + 'index_start' + TAB + 'wl_end' + TAB + 'index_end'
+; write each row (0-based indices)
+for i = 0, n_peaks-1 do begin
+  printf, lun, wl_start[i], TAB, i, TAB, wl_end[i], TAB, i, $
+    format='(F7.3, A, I0, A, F7.3, A, I0)'
+endfor
+close, lun
+free_lun, lun
+print, 'Saved wavelength ranges to: ', dtapts_txt_file 
+
+; for interpolated points: 
+
+
 
 
 stop
 end
-
