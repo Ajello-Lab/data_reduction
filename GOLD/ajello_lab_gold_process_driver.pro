@@ -23,7 +23,21 @@ pro ajello_lab_gold_process_driver
   data_set_id = 'big_e-gun_round_3'
   data_set_id = 'kimball_egun_round_11'
 ;  path_data = file_search( path_base + data_set_id + path_sep(), 'test*', /test_dir, count=num_data_sets )
-  path_data = file_search( path_base + data_set_id + path_sep() + 'N2' + path_sep() + '16ev'+ path_sep(), 'test*', /test_dir, count=num_data_sets ) 
+  ;path_data = file_search( path_base + data_set_id + path_sep() + 'N2' + path_sep() + '16ev'+ path_sep(), 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/16eV/med_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/20eV/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/40eV/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/40eV/lo_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/40eV/med_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/100eV/med_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/100eV/lo_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/16eV/lo_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/20eV/lo_pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/100eV/hi-pres/', 'test*', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/100eV/hi-pres/test56_image3/', /test_dir, count=num_data_sets )
+  path_data = file_search( path_base + data_set_id + '/N2/16eV/hi_pres/test58_image2/', /test_dir, count=num_data_sets )
+  ;path_data = file_search( path_base + data_set_id + '/N2/16eV/hi_pres/', 'test*', /test_dir, count=num_data_sets )
+  
   if num_data_sets eq 0 then begin
     print, 'no data found'
     stop
@@ -80,11 +94,14 @@ pro ajello_lab_gold_process_driver
     cback = 0
     ajello_lab_gold_process, path_data[i], wl, xp, yp, cbin_back, phd, hdr_list, $
       plt, plt_phd_bin, pmin=pmin, pmax=pmax, buffer=0, filter_str='background', status=status_back
+    if status_back lt 0 then cbin_back = 0.
     
     ajello_lab_gold_process, path_data[i], wl, xp, yp, cbin_image, phd, hdr_list, $
-      plt, plt_phd_bin, pmin=pmin, pmax=pmax, buffer=0, filter_str='image', status=status
+      plt, plt_phd_bin, pmin=pmin, pmax=pmax, buffer=0, filter_str='image', status=status_image
+    if status_image lt 0 then cbin_image = 0.
 
-    cbin = cbin_image - cbin_back
+    if status_image lt 0 then cbin = 0. else $     
+      cbin = cbin_image - cbin_back
 
     str = strsplit(path_data[i],path_sep(),/extract)
 
@@ -104,16 +121,24 @@ pro ajello_lab_gold_process_driver
     win = window(dim=[1200,800])
     min_value = 0
     max_value = max(cbin_image)
-    img1 = image( cbin_image, min_value=min_value, max_value=max_value, title='cbin_image', current=win, layout=[3,2,1] )
-    img2 = image( cbin_back, min_value=min_value, max_value=max_value, title='cbin_back', current=win, layout=[3,2,2] )
+    if n_elements(cbin_image) gt 1 then $ 
+      img1 = image( cbin_image, min_value=min_value, max_value=max_value, title='cbin_image', current=win, layout=[3,2,1] )
+    if n_elements(cbin_back) gt 1 then $ 
+      img2 = image( cbin_back, min_value=min_value, max_value=max_value, title='cbin_back', current=win, layout=[3,2,2] )
     img3 = image( cbin, min_value=min_value, max_value=max_value, title='cbin_image - cbin_back', current=win, layout=[3,2,3] )
-    spec_image = mean(cbin_image,dim=2)
-    spec_back = mean(cbin_back,dim=2)
-    spec_diff = mean(cbin,dim=2)
-    maxval = max(spec_image)*1.1
-    p1 = plot( spec_image, current=win, layout=[3,2,4], yr=[0,maxval] )
-    p2 = plot( spec_back, current=win, layout=[3,2,5], yr=[0,maxval] )
-    p3 = plot( spec_diff, current=win, layout=[3,2,6], yr=[0,maxval] )
+    if n_elements(cbin_image) gt 1 then $
+      spec_image = mean(cbin_image,dim=2)
+    if n_elements(cbin_back) gt 1 then $
+      spec_back = mean(cbin_back,dim=2)
+    if n_elements(cbin_image) gt 1 then begin
+      spec_diff = mean(cbin,dim=2)
+      maxval = max(spec_image)*1.1
+      p1 = plot( spec_image, current=win, layout=[3,2,4], yr=[0,maxval] )
+    endif
+    if n_elements(cbin_back) gt 1 then $
+      p2 = plot( spec_back, current=win, layout=[3,2,5], yr=[0,maxval] )
+    if n_elements(cbin_image) gt 1 then $
+      p3 = plot( spec_diff, current=win, layout=[3,2,6], yr=[0,maxval] )
     file_compare_png = path_save + str[-4] + '_' + str[-3] + '_' + str[-2] + '_' + str[-1] + '_pmax_' + string(pmax,format='(I03)') + '_background_comparison.png'
     win.save,file_compare_png
 

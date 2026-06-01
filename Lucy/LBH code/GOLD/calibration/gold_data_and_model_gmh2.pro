@@ -322,7 +322,8 @@ leg = legend(target=[p0, p1], position=[170,0.8], /data, /auto_text_color)
 
 ; for data points: 
 
-dtapts_txt_file = "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\datapts_wl_and_channls.txt"
+;dtapts_txt_file = "Z:\Lucy's codes, plots\GOLD\16eV\hi_pres\datapts_wl_and_channls.txt"
+out_file = '/users/holsclaw/temp.txt'
 openw, lun, out_file, /get_lun
 TAB = string(9B)   ; tab character
 ; header line
@@ -338,7 +339,11 @@ print, 'Saved wavelength ranges to: ', dtapts_txt_file
 
 ; for interpolated points: 
 
-
+nwl = n_elements(wl_data_shift)
+for i = 0, nwl - 1 do begin
+  printf, lun, wl_data_shift[i], sens_interp[i], format='(F10.2, F12.6)'
+endfor
+  
 
 
 stop

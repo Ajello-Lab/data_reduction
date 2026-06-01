@@ -255,6 +255,16 @@ sinv=area_model/area_data
 sinv=sinv/min(sinv)
 sens=1./sinv
 
+;
+; smooth the sensitiviety curve
+;  
+lowess, wave_model_cen, sens, 8., sens_sm
+
+p1 = plot( wave_model_cen, sens, name='raw', symbol='o', /sym_filled, yr=[0,1.2], linestyle=6 )
+p2 = plot( wave_model_cen, sens_sm, /over, color='red', name='smooth' )
+
+sens = sens_sm
+
 ; plot interp fit
 ; Apply interpolated sensitivity to full data
 sens_interp = interpol(sens, wavemean, wl_data_shift, /spline) > 0

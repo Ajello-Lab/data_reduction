@@ -78,26 +78,39 @@ sat_value = 2.^12 - 1.
 ;  end
 ;endcase
 
+; Example path:
+; /Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Round 12/N2/30eV/test4_image1_hi_pres_25miA
+;  
+; Consider the folder name below 'IUVS_Breadboard' to be a unique data collection
+;
+
 path_comp = strupcase( strsplit( path_data, path_sep(), /extract ) )
 ;ndx_match = where( strmatch( strmid(path_comp,0,10), '_BIG_E-GUN' ), count )
-ndx_match = where( strpos(path_comp,'BIG_E-GUN') ne -1, count )  ; Oct 2, 2024
-if count eq 0 then begin
 
-  ndx_match = where( strpos(path_comp,'NEWEGUN') ne -1, count )  ; Oct 2, 2024
-  if count eq 0 then begin    
-    print, 'dataset not found'
-    stop
-  endif
-endif
-if count gt 1 then begin
-  print, 'too many fields satisfy criteria'
-  stop
-endif
-ndx_match = ndx_match[0]
-;path_comp[ndx_match]
-gas = path_comp[ndx_match+1]
-extra_id = ''
-case path_comp[ndx_match] of 
+ndx_base = where( strmatch( path_comp,'IUVS_BREADBOARD') )
+dataset_id = path_comp[ ndx_base + 1 ]
+
+;ndx_match = where( strpos(path_comp,'BIG_E-GUN') ne -1, count )  ; Oct 2, 2024
+;if count eq 0 then begin
+;
+;  ndx_match = where( strpos(path_comp,'NEWEGUN') ne -1, count )  ; Oct 2, 2024
+;  if count eq 0 then begin    
+;    print, 'dataset not found'
+;    stop
+;  endif
+;endif
+;if count gt 1 then begin
+;  print, 'too many fields satisfy criteria'
+;  stop
+;endif
+
+;ndx_match = ndx_match[0]
+;;path_comp[ndx_match]
+;gas = path_comp[ndx_match+1]
+;extra_id = ''
+
+;case path_comp[ndx_match] of
+case dataset_id of 
   '_BIG_E-GUN':begin
     temp = strsplit( path_comp[ndx_match+2], '_', /extract )
     energy = temp[1]
@@ -219,7 +232,55 @@ case path_comp[ndx_match] of
       energy = ''
       extra_id = temp + '_' + extra_id2
     endif
+
+    ; example data reduction file:
+    ; /Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/NeweGun_round10_after_energy_correction/data_reduction/N2_16EV_FUV_TEST17_IMAGE1_HIPRESS.idl
+    ; <gas> _ <energy> _ <channel> _ <testxx> _  <imagex> _ <pressure_id>
+    
   end
+  
+  'ROUND_12': begin
+    ; Example data file
+    ; '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Round 12/N2/30eV/test4_image1_hi_pres_25miA/FUV_CDSImage_445A0C2E_N2_30eV_4e-5_rot0_test4_image1_MCP910V_Exp20000ms_000.fits'
+
+    gas = path_comp[ndx_base+2]
+    
+    temp = path_comp[ndx_base+3]
+    pos = strpos(temp,'EV')
+    energy = strmid(temp,0,pos+2)
+    
+    ;energy = path_comp[ndx_match+2]
+    ;extra_id1 = strmid(temp,pos+3,strlen(temp))
+    
+    temp = strsplit( path_comp[ndx_base+4], '_', /extract )
+    test_str = temp[0]
+    image_str = temp[1]
+    
+    extra_id = test_str + '_' + image_str
+
+;  '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/NeweGun_round10_after_energy_correction/N2/30eV/test9_image1_hiPress_withH20/FUV_CDSImage_54A79EC0_Round10_test9_image1_30eV_hiPress_withH20_MCP70V_Exp60000ms_000.fits'
+;  '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Round 12/                               N2/30eV/test4_image1_hi_pres_25miA/  FUV_CDSImage_445A0C2E_N2_30eV_4e-5_rot0_test4_image1_MCP910V_Exp20000ms_000.fits'
+  
+  end
+  
+  'AJELLO_ROUND13': begin
+    ; Example data file
+    ; '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Ajello_Round13/CO2/16eV/test3_image1/FUV_CDSImage_5C6B1588_CO2_test3_image1_16eV_hi_pres_rot+1.5_MCP910V_Exp60000ms_000.fits'
+    
+    gas = path_comp[ndx_base+2]
+
+    temp = path_comp[ndx_base+3]
+    pos = strpos(temp,'EV')
+    energy = strmid(temp,0,pos+2)
+
+    temp = strsplit( path_comp[ndx_base+4], '_', /extract )
+    test_str = temp[0]
+    image_str = temp[1]
+
+    extra_id = test_str + '_' + image_str
+    
+  end
+  
 endcase
 
 print, 'gas: ', gas
@@ -746,6 +807,9 @@ foreach channel, channel_vec do begin
         'wl: estimated wavelength for each pixel', $
         'yspa: estimated spatial position for each pixel']
 
+      if isa(count_light) eq 0 then count_light = nlight
+      if isa(count_dark) eq 0 then count_dark = ndark
+      
       int_time = file_desc[0].int_time
       save, filename=fsave, $
         arr, arr_light_avg, arr_dark_avg, arr_light_sdv, arr_dark_sdv, $
@@ -779,7 +843,7 @@ foreach channel, channel_vec do begin
 endforeach
 mem2 = memory(/current)
 
-print, 'memory in current use:'
+print, 'memory in current use (MB):'
 print, 'start of loop: ', mem1/1.e6
 print, 'end of loop:  ', mem2/1.e6
 print, 'diff: ', (mem2-mem1)/1.e6

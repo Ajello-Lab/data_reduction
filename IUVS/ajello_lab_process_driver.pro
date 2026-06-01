@@ -46,6 +46,8 @@ pro ajello_lab_process_driver
   dataset_id = 'Big_e-gun_roundVIII'
   dataset_id = 'Big_e-gun_RoundVIII_final'
   dataset_id = 'NeweGun_round10_after_energy_correction'
+  dataset_id = 'Round_12'
+  dataset_id = 'Ajello_Round13'
   ;path_data = file_search( path_base+dataset_id+path_sep()+'N2/30eV', 'test*', /test_dir )
   
   path_data_exp = path_base+dataset_id+path_sep() + 'N2+O2/30eV/'
@@ -57,6 +59,26 @@ pro ajello_lab_process_driver
   path_data_exp = path_base+dataset_id+path_sep() + 'N2/100eV/test20_image1_hiPress/'
   path_data_exp = path_base+dataset_id+path_sep() + 'N2/100eV/test21_image2_hiPress/'
   path_data_exp = path_base+dataset_id+path_sep() + 'N2/100eV/test22_image3_hiPress/'
+  path_data_exp = path_base+dataset_id+path_sep() + 'N2/30eV/'
+  ;path_data_exp = path_base+dataset_id+path_sep() + 'N2/100eV/'
+  path_data_exp = path_base+dataset_id+path_sep() + 'N2/20eV/'
+;  path_data_exp = path_base+dataset_id+path_sep() + 'N2/12eV/'
+;  path_data_exp = path_base+dataset_id+path_sep() + 'N2/16eV/'
+  path_data_exp = path_base+dataset_id+path_sep() + 'H2/100eV/'
+  path_data_exp = path_base+dataset_id+path_sep() + 'CO2/30eV/'
+  
+  ;path_data_exp = path_base+dataset_id+path_sep() + 'CO2/16eV/test5_image1/'
+  ;path_data_exp = path_base+dataset_id+path_sep() + 'CO2/30eV/test4_image1/'
+  ;path_data_exp = path_base+dataset_id+path_sep() + 'CO2/30eV/test7_image2/'
+  ;path_data_exp = path_base+dataset_id+path_sep() + 'CO2/30eV/test8_image1/'
+  path_data_exp = path_base+dataset_id+path_sep() + 'CO2/100eV/test6_image1/'
+  
+  
+  
+
+
+;'/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Round 12/data_reduction'
+
 
   ;path_data_exp = path_base+dataset_id+path_sep() + 'N2/35eV/'
   ;path_data_exp = path_base+dataset_id+path_sep() + 'N2/100eV_image1_test4_hi_4e-5Torr_9-30-2024/'
@@ -137,7 +159,7 @@ pro ajello_lab_process_driver
   ;
   ; set this flag to 1 to overwrite a previously processed dataset if it exists
   ;
-  reprocess_flag = 1
+  reprocess_flag = 0
   experimental_flag = 0
   
   ;

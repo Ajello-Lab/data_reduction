@@ -63,7 +63,7 @@ endif
 ; find all files that contain the string in "filter_str", if it is provided 
 ;
 if isa(filter_str) eq 1 then begin
-  pos = strpos( file, filter_str )
+  pos = strpos( strlowcase(file), filter_str )
   ndx_pos = where( pos ne -1, count_pos )
   if count_pos gt 0 then begin
     file = file[ndx_pos]
