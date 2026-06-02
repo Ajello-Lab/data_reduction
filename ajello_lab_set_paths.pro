@@ -34,6 +34,9 @@ pro ajello_lab_set_paths, path_base, path_repo
       'lufa5942': begin
         path_base = "Z:\round10\"
       end
+      'benjamincondit': begin
+        path_base = '/Users/benjamincondit/Desktop/Data Records'
+      end
       else:begin
         print, 'Unknown user: Create a new entry in this case statement'
         stop   
