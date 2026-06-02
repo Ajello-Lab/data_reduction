@@ -4,17 +4,30 @@
 ;   produced by Xianming Liu, acquired from Joe Ajello in May 2026
 ;   
 ; INPUTS
-;  file: full path filename of the data file "h2euv100.txt"
+;  none
 ; 
 ; OUTPUTS
 ;  wave: sorted wavelength, angstroms
 ;  mag: magnitude, units unknown
+;
+; KEYWORDS
+;  file: (optional) full path filename of the data file "h2euv100.txt",
+;   must be provided if not using GitHub repo
 ;-
-pro ajello_lab_read_h2euv100, file, wave, mag
+pro ajello_lab_read_h2euv100, wave, mag, file=file
 
-if n_params() eq 0 then begin
+;
+; **** DO NOT EDIT THE PATH BELOW ****
+;
+if keyword_set(file) eq 0 then begin
   ajello_lab_set_paths, path_base, path_repo  
   file = path_Ref + 'h2euv100.txt'
+endif
+
+if file_test(file) eq 0 then begin
+  print, 'file not found: '
+  print, file
+  stop
 endif
 
 nlines = file_lines(file)

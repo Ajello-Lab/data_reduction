@@ -1,7 +1,8 @@
-
-
-pro ajello_lab_calibration_fuv_n2_20260513, wave, spec, sens, $
-  show_plots=show_plots
+;+
+; PURPOSE
+;  This routine will
+;-
+pro ajello_lab_calibration_fuv_n2_20260513
 
 ajello_lab_set_paths, path_base, path_repo
 

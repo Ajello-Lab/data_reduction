@@ -44,6 +44,11 @@ pro ajello_lab_n2_reference, wave_lbh, lbh_tot, $
     stop
   endif
 
+  ;
+  ; restore the N2 model
+  ;
+  restore, file_n2_model, /relax
+
   if keyword_set(show_plots) then begin
     ; PLOT SEPERATE v' ***
     win = window(dim=[800,600])
@@ -60,11 +65,6 @@ pro ajello_lab_n2_reference, wave_lbh, lbh_tot, $
     leg = LEGEND(TARGET=[p0,p1,p2,p3,p4,p5,p6], POSITION=[177,1.1], $
       /DATA, /AUTO_TEXT_COLOR)
   endif
-
-  ;
-  ; restore the N2 model
-  ;
-  restore, file_n2_model, /relax
 
   ;
   ; retreive IUVS PSF 
