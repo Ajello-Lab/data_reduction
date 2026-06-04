@@ -3,9 +3,19 @@
 ;  This routine will
 ;
 ; INPUTS
-;  none
+; wl_spec: Corrected IUVS wavelength, nm
+; spec: IUVS measured spectrum
+; OUTPUTS
+; wl_sens: wavelength, nm
+; sens: sensitivity in arbitrary units
+; wl1: starting wavelength of each bandpass used to derive sensitivity
+; wl2: ending wavelength of each bandpass used to derive sensitivity
 ;
-;-
+; KEYWORDS
+; show_plots: set to 1 to show plots at intermediate processing steps
+; file_n2_model: If not using the GitHub repo, this must specify
+;   the full path to the N2 LBH model file.
+;
 pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
   wl1, wl2, $
   show_plots = show_plots, $
@@ -19,7 +29,7 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
         file_data = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/_Big_e-gun_RoundVII/data_reduction/H2_100EV_FUV_TEST11_H2_100EV_ROT_+7_IMAGE1_LOW_PRESS_4E-6.idl'
       end
       'benjamincondit': begin
-        file_data = '/Users/benjamincondit/idl/dat/H2_100EV_FUV_TEST11_H2_100EV_ROT_+7_IMAGE1_LOW_PRESS_4E-6.idl'
+        file_data = '/Users/benjamincondit/Desktop/IUVS_Breadboard/Round 7/data_reduction/H2_100EV_FUV_TEST11_H2_100EV_ROT_+7_IMAGE1_LOW_PRESS_4E-6.idl'
       end
     endcase
     ; restore,file,/ver
@@ -88,30 +98,34 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
   ndx_spec_in = where(wl_spec gt 125 and wl_spec lt 130)
   ndx_ref_in = where(wave_ref gt 125 and wave_ref lt 130)
 
-  wl1 = [115.4, 116.9, 118.4, 119.6, 122.5, 123.5, 124.3, 126.5, 132.9, 133.9, 134.9, 136.1, 136.7, 138.9, 142.1, 144.9, 147.7, 149.1, 150.8, 152.7, 154.1, 155.7, 159.9, 161.9, 163.1, 165.0, 166.2]
-  wl2 = [116.9, 118.4, 119.5, 121.0, 123.5, 124.3, 126.5, 129.3, 133.9, 134.9, 136.1, 136.7, 138.4, 140.8, 144.9, 147.0, 149.1, 150.1, 152.1, 153.6, 155.6, 159.9, 161.9, 163.1, 165.0, 166.2, 168.1]
+  wl1 = [115.4, 116.9, 118.4, 119.6, 122.5, 123.5, 124.3, 126.5, 132.9, 133.9, 134.9, 136.1, 136.7, 138.9, 142.1, 144.9, 147.7, 149.1, 150.8, 152.7, 154.1, 155.6, 159.9, 161.9, 163.1]
+  wl2 = [116.9, 118.4, 119.5, 121.0, 123.5, 124.3, 126.5, 129.3, 133.9, 134.9, 136.1, 136.7, 138.4, 140.8, 144.9, 147.0, 149.1, 150.1, 152.1, 153.6, 155.6, 159.9, 161.9, 163.1, 165.0]
 
-  win = window(dim = [1200, 600])
-  xr = [110, 170]
-  p1 = plot(wave_ref / 10., spec_ref - min(spec_ref), yr = [0, 5.2e4], name = 'reference', xtitle = 'wavelength (nm)', current = win, xr = xr, font_size = 14)
-  p2 = plot(wl_spec, spec, /over, color = 'red', name = 'data')
-  ; p3 = plot(wl_spec, spec_deriv * 5000, /over, color = 'pink', name = 'slope')
-  leg = legend(target = [p1, p2], font_size = 14)
+  if keyword_set(show_plots) then begin
+    win = window(dim = [1200, 600])
+    xr = [110, 170]
+    p1 = plot(wave_ref / 10., spec_ref - min(spec_ref), yr = [0, 5.2e4], name = 'reference', xtitle = 'wavelength (nm)', current = win, xr = xr, font_size = 14)
+    p2 = plot(wl_spec, spec, /over, color = 'red', name = 'data')
+    ; p3 = plot(wl_spec, spec_deriv * 5000, /over, color = 'pink', name = 'slope')
+    leg = legend(target = [p1, p2], font_size = 14)
+  endif
 
   ;
   ; interpolate reference to data wavelength scale
   ; ratio of data to reference should be the sensitivity, but it is noisy
   ;
-  spec_refi = interpol(spec_ref - min(spec_ref), wave_ref / 10., wl_spec)
-  p = plot(wl_spec, spec / spec_refi)
+  ; spec_refi = interpol(spec_ref - min(spec_ref), wave_ref / 10., wl_spec)
+  ; p = plot(wl_spec, spec / spec_refi)
 
   n_peaks = n_elements(wl1)
 
-  win = window(dim = [1200, 600])
-  p1 = plot(wl_spec, spec, xr = [110, 190], current = win)
-  p2 = plot(wave_ref, spec_ref / max(spec_ref[ndx_ref_in]) * max(spec), /over, color = 'red')
-  for i = 0, n_peaks - 1 do $
-    pi = plot_shade(p1, wl1[i], wl2[i], fill_transparency = ((i mod 2) * 20 + 70), fill_color = 'blue', yr = [0, 3.5e4])
+  if keyword_set(show_plots) then begin
+    win = window(dim = [1200, 600])
+    p1 = plot(wl_spec, spec, xr = [110, 190], current = win)
+    p2 = plot(wave_ref, spec_ref / max(spec_ref[ndx_ref_in]) * max(spec), /over, color = 'red')
+    for i = 0, n_peaks - 1 do $
+      pi = plot_shade(p1, wl1[i], wl2[i], fill_transparency = ((i mod 2) * 20 + 70), fill_color = 'blue', yr = [0, 3.5e4])
+  endif
 
   pos_cen_data_pix = fltarr(n_peaks) * !values.f_nan
   pos_cen_data_wave = fltarr(n_peaks) * !values.f_nan
@@ -135,33 +149,34 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
   wl_sens = pos_cen_ref_wave
   sens = sig_data / sig_ref
 
-  win = window(dim = [800, 600])
-  p1 = plot(pos_cen_data_pix, pos_cen_data_wave, symbol = 'x', current = win, $
-    font_size = 16, name = 'data', xtitle = 'pixel', ytitle = 'wavelength (nm)', $
-    layout = [1, 2, 1])
-  p2 = plot(pos_cen_data_pix, pos_cen_ref_wave, symbol = 'o', /over, color = 'red', name = 'reference')
-  leg = legend(target = [p1, p2], font_size = 14)
-  ;
-  p3 = plot(pos_cen_data_pix, pos_cen_data_wave - pos_cen_ref_wave, symbol = 'o', $
-    current = win, layout = [1, 2, 2], xtitle = 'pixel', ytitle = 'wavelength (nm)', $
-    font_size = 16, title = 'data - reference')
-  markerp, p3, y = 0, linestyle = 2
+  if keyword_set(show_plots) then begin
+    win = window(dim = [800, 600])
+    p1 = plot(pos_cen_data_pix, pos_cen_data_wave, symbol = 'x', current = win, $
+      font_size = 16, name = 'data', xtitle = 'pixel', ytitle = 'wavelength (nm)', $
+      layout = [1, 2, 1])
+    p2 = plot(pos_cen_data_pix, pos_cen_ref_wave, symbol = 'o', /over, color = 'red', name = 'reference')
+    leg = legend(target = [p1, p2], font_size = 14)
+    ;
+    p3 = plot(pos_cen_data_pix, pos_cen_data_wave - pos_cen_ref_wave, symbol = 'o', $
+      current = win, layout = [1, 2, 2], xtitle = 'pixel', ytitle = 'wavelength (nm)', $
+      font_size = 16, title = 'data - reference')
+    markerp, p3, y = 0, linestyle = 2
 
-  ; p1 = plot( pos_cen_data_wave, sig_data/max(sig_data) )
-  ; p2 = plot( pos_cen_ref_wave, sig_ref/max(sig_ref), /over, color='red' )
+    ; p1 = plot( pos_cen_data_wave, sig_data/max(sig_data) )
+    ; p2 = plot( pos_cen_ref_wave, sig_ref/max(sig_ref), /over, color='red' )
 
-  ; p1 = plot( pos_cen_data_wave, sens/max(sens), symbol='o', /sym_filled )
+    ; p1 = plot( pos_cen_data_wave, sens/max(sens), symbol='o', /sym_filled )
 
-  win = window(dim = [1200, 600])
-  p1 = plot(wl_spec, spec / max(spec[ndx_spec_in]), xr = [110, 190], current = win, $
-    thick = 2, yr = [0, 1.1], xtitle = 'wavelength (nm)', font_size = 16, name = 'data')
-  p2 = plot(wave_ref, spec_ref / max(spec_ref[ndx_ref_in]), /over, color = 'red', $
-    name = 'reference', thick = 2)
-  for i = 0, n_peaks - 1 do $
-    pi = plot_shade(p1, wl1[i], wl2[i], fill_transparency = ((i mod 2) * 20 + 70), fill_color = 'blue')
-  p3 = plot(pos_cen_data_wave, sens / max(sens), symbol = 'o', /sym_filled, $
-    /over, name = 'sensitivity', linestyle = 2)
-  leg = legend(target = [p1, p2, p3])
-
-  stop
+    win = window(dim = [1200, 600])
+    p1 = plot(wl_spec, spec / max(spec[ndx_spec_in]), xr = [110, 190], current = win, $
+      thick = 2, yr = [0, 1.1], xtitle = 'wavelength (nm)', font_size = 16, name = 'data')
+    p2 = plot(wave_ref, spec_ref / max(spec_ref[ndx_ref_in]), /over, color = 'red', $
+      name = 'reference', thick = 2)
+    for i = 0, n_peaks - 1 do $
+      pi = plot_shade(p1, wl1[i], wl2[i], fill_transparency = ((i mod 2) * 20 + 70), fill_color = 'blue')
+    p3 = plot(pos_cen_data_wave, sens / max(sens), symbol = 'o', /sym_filled, $
+      /over, name = 'sensitivity', linestyle = 2)
+    leg = legend(target = [p1, p2, p3])
+    stop
+  endif
 end
