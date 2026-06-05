@@ -76,7 +76,7 @@ pro ajello_lab_calibration_fuv_h2_20260604
 
   ; write out sensitivity to text file
   ;
-  ; file_out = path_save + id1 + '_sensitivity.txt'
+  ; file_out = path_save + id1 + '.txt'
   ; num_sens = n_elements(wl_sens)
   ; openw,fid,file_out,/get_lun
   ; for i = 0, num_sens - 1 do $
@@ -86,7 +86,7 @@ pro ajello_lab_calibration_fuv_h2_20260604
 
   win = window(dim = [1400, 600])
   xr = [110, 190]
-  p1 = plot(wl_spec, spec / max(spec[ndx_spec]), yr = [0, 1.2], current = win, $
+  p1 = plot(wl_spec, spec / max(spec[ndx_spec]), yr = [0, 1.4], current = win, $
     thick = 2, font_size = 16, xr = xr, xtitle = 'wavelength (nm)', title = id1, name = 'data')
   p2 = plot(wl_ref, ref / max(ref[ndx_ref]), /over, color = 'red', thick = 2, name = 'reference')
   p3 = plot(wl_sens, sens / sens[ndx_sens], /over, symbol = 'o', /sym_filled, linestyle = 2, $

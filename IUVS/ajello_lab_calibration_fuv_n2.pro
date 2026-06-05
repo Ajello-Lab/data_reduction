@@ -62,11 +62,11 @@ pro ajello_lab_calibration_fuv_n2, wl_spec, spec, wl_sens, sens, $
 
   ajello_lab_n2_reference, wl_ref, ref, file_n2_model = file_n2_model
 
-  ndx_spec_in = where(wl_spec gt 125)
-  ndx_ref_in = where(wl_ref gt 125)
+  ndx_spec_in = where(wl_spec gt 125 and wl_spec lt 135)
+  ndx_ref_in = where(wl_ref gt 125 and wl_ref lt 135)
 
-  ; p1 = plot( wl, spec )
-  ; p2 = plot( wl_ref, ref/max(ref[ndx_ref_in])*max(spec[ndx_spec_in]), /over, color='red' )
+  ; p1 = plot(wl_spec, spec)
+  ; p2 = plot(wl_ref, ref / max(ref[ndx_ref_in]) * max(spec[ndx_spec_in]), /over, color = 'red')
 
   ; area method
   ; Lucy's code
