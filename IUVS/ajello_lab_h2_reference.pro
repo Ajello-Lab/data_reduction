@@ -38,6 +38,7 @@ pro ajello_lab_h2_reference, wave, spec, $
     ; data = (read_ascii(file_1998,data_start=2)).(0)
     ; wl_1998 = reform(data[0,*])
     ; spec_1998 = reform(data[1,*])
+    ;
   endif
 
   if file_test(file_ref) eq 0 then begin
