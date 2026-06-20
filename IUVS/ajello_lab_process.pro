@@ -281,6 +281,22 @@ case dataset_id of
     
   end
   
+  else: begin
+    
+    gas = path_comp[ndx_base+2]
+
+    temp = path_comp[ndx_base+3]
+    pos = strpos(temp,'EV')
+    energy = strmid(temp,0,pos+2)
+
+    temp = strsplit( path_comp[ndx_base+4], '_', /extract )
+    test_str = temp[0]
+    image_str = temp[1]
+
+    extra_id = test_str + '_' + image_str
+    
+  end
+  
 endcase
 
 print, 'gas: ', gas
