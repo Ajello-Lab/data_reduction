@@ -1,0 +1,57 @@
+If a binning choice was loaded and processed, here are the steps required
+to redo the binning choice.
+
+occlc.info
+
+Find the list of images for the team and event
+
+select idx from info where event='OR20201021' and team='Kamin';
+
+carry the binned analysis as well, all co-exist in db.  This requires
+specification of binfac in downstream tools and makes binfac part of the
+key for specifying data to analyze.
+
+occbingen,team,fwhm,binfac
+  modified to support different binned directories (binned_N) and modified
+    to post history on running this tool, no other database indicates of
+    this operation exist after running this step.
+
+occplotinfo,team[,binfac=]
+  No changes needed.  This doesn't save anything, just generates plots
+
+occloadinfo,team[,binfac=x]
+  This needs to change to make a dataset be defined by event,team,binfac
+
+occloadstars,team,binfac
+  New required input, binfac, no default.  Modest changes to the setup query.
+
+occbuildpsf
+  minor changes to the path
+
+occstarfit
+  minor changes to the path
+
+occwcsgen
+  add binfac and redo keywords (redo need for bug in occtimebin, that is now
+      fixed)
+  improved fitting process to use last rotation angle instead of the
+  wcsinit value.
+
+occpopspos
+  simple tweak for binned directory
+
+occinittarg
+  simple tweak for binned directory
+
+occtargfit
+  simple tweak for binned directory
+
+occplotlc
+  big changes
+  1) figure out how many different binning datasets there are.
+    a) if one show it (binfac not needed on input)
+    b) if two show the one pointed to by binfac
+       error if binfac not provided or if not in the list
+  2) change the output file names
+    a) lightcurve, team.dat or team_binfac.dat
+    b) saved plot, team_event_lc.png or team_event_binfac.png

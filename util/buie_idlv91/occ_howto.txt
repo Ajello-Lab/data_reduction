@@ -1,0 +1,137 @@
+Build the config.ini file.  This has a lot of information that is used only
+once for loading the database but some is used routinely as each step
+progresses.  Note that the order of the directories listed in the [ddir]
+section matters.  It stops on the first hit.
+
+For RECON events, use this:
+
+IDL> mkoccconfig,idx
+
+where idx is the recon.campaign db index for the RECON campaign event.  You
+may still need to tweak this file for data storage locations and team related
+customizations but it takes care of the star and event information that is
+known and stored in the database or elsewhere.
+
+Next, use the helper tool to scan for all datasets.
+
+IDL> recondscan [,/shownew]
+
+This only scans directories you indicate in the [ddir] section of the
+config.ini file and does not weed out duplicated.  This creates stubs
+to add to config.ini (newconfig.init) and chords.dat (newchords.dat).
+If there is only one dataset in the folder, that one is picked.  If there
+are multiple choices, you will get a picker dialog to select the one
+you want to use.  Use the /shownew flag to restrict to reporting on data
+from teams not already found in the config.ini file.
+
+IDL> occinitcam
+
+This loads this campaign information into the occlc database.  After this
+you start working on the data itself.
+
+At the start, everything is done with the original image.  This includes output
+files *info.dat and all the source files.
+
+For each team in turn,
+add section for team, dirtime = HH_MM_SS will point to the dataset to be
+processed for this team
+
+Generate support information from the images.  Always start with BINFAC=1
+
+IDL> occinfogen,team,/test
+
+Run this until you have a good starting guess.  fwhmguess = XXX is added to
+a section in the config file named for the team.  A global value can be set
+to change the default and if the global value is ok, you don't need to add this
+to the section.  Once you have a good guess, the run it for real.
+
+IDL> occinfogen,team
+
+Check the results to see if it makes sense to bin the data:
+
+IDL> occplotinfo,team
+
+You don't have to bin but it does no harm to try and then not use it other than
+the processing time required.  To bin the data:
+
+IDL> occbingen,team,fwhm,binfac
+
+The value for fwhmguess is most important to set in the config.ini file
+for the unbinned case.  However, for the binned cases, you can run these
+blind since result will be useful only for specific ranges of seeing.  These
+two cases are universally useful to run for the binning cases.  You don't
+have to run them all but you can run all three (binfac=1,2,3) at the same
+time in the time it takes to just run binfac=1 so there's no harm if it's
+not a useful case.
+
+IDL> occbingen,team,7,2
+IDL> occbingen,team,10,3
+
+Next, the data for the choice of binning needs to be loaded into the database.
+This will lock in your choice of binning and get set for the next steps.
+
+IDL> occloadinfo,team,binfac=x
+IDL> occloadstars,team,binfac
+
+===========================================================================
+You can run all the teams up to this point.  The next steps can be done one
+at a time or as each team is added.
+===========================================================================
+
+IDL> occbuildpsf
+IDL> occstarfit
+
+Next is building the WCS solutions.  This can be a little fiddly.  You need
+to tweak wcsinit.dat as you work each team to get it to latch on and get a
+solution.  Once a solution exists wcsinit.dat no longer matters so you do not
+have to find a setting that works for all frames.  If it fails, usually you
+just take the default to quit, edit wcsinit.dat, and resume.  If the image
+really is bad, mark it so and it will continue.  You can always come back to
+the bad image later if it turns out to be really important.  For the first
+frame you want to use the /test flag:
+
+; ---- fix ---
+update info set filename=concat('f',filename) where filename like 'rame_%';
+update info set stemdir='RECON_QHY/RECON18/2021-01-09/03_46_22/' where stemdir='/RECON_QHY/RECON18/2021-01-09/03_46_22/';
+; ------------
+
+IDL> occwcsgen,/display,team=team,/test[,/redo,binfac=]
+
+   Using binfac here is needed only if you end up processing more than one
+   binfac and need to overwrite an old WCS.  This is not normal.
+
+Once you get locked on, rerun without the /test flag:
+
+IDL> occwcsgen,/display,team=team
+
+IDL> occpopspos   ; run each time after adding new wcs'd fields
+
+IDL> occinittarg   ; run each time after adding new wcs'd fields
+
+IDL> occtargfit
+
+plot the lightcurve, make sure tsig and xsig are set in config.ini, this will
+save the data file asa well
+
+IDL> occplotlc,team [,/nosave]
+
+The file, crosstrack.dat, needs to exist and be populated for at least the
+site you are working on.  Building this requires the file, sites.dat.  See
+the occxtrack documentation for what is in the sites.dat file.  You will
+naturally be adding new sites to wcsinit.dat (those with useful data) and
+all sites to sites.dat and then rerunning occxtrack as things are added
+to sites.dat
+
+select target.idx,imidx,target.event,x,y,mag,magerr,chisq,status
+from target,info
+where target.imidx=info.idx
+and target.event='EU20200916'
+and team='X02'
+and binfac=2;
+
+update target,info
+set target.status='refit'
+where target.imidx=info.idx
+and target.event='EU20200916'
+and team='X02'
+and binfac=2;

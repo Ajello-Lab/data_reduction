@@ -36,7 +36,7 @@ pro ajello_lab_set_paths, path_base, path_repo
       path_base = 'Z:\round10\'
     end
     'benjamincondit': begin
-      path_base = '/Users/benjamincondit/idl/data_reduction/'
+      path_base = '/Users/benjamincondit/idl/data_reduction'
     end
     else: begin
       print, 'Unknown user: Create a new entry in this case statement'

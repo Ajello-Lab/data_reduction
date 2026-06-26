@@ -1,0 +1,36 @@
+starcprmt
+
+  When promoting the normal ascii file (from refnet), promote to v1.0
+     (no change to current operation)
+
+  If file is a v1.0 file, do nothing
+
+  If file is a v1.1, do nothing
+
+rdstarc
+
+  Add code to read v1.1 files, all information from this version is
+    collected into an anonymous structure and returned.  Existing
+    return values are populated but no new ones are added except for
+    the structure.
+
+  Add code to pack up all the v1.0 data into a structure.  Include the
+    version in the structure.
+
+  The v1.1 file must contain the equinox and epoch of the catalog data
+
+  When reading, there is an optional epoch input keyword.  If the file
+    is a v1.0 file the epoch input is ignored.  If the file is a v1.1
+    then the return variables are corrected to that epoch.  The structure
+    is not influenced by the epoch.
+
+wrstarc
+
+  structure input allowed instead of variables for v1.0, structure
+    required for v1.1.
+
+  when writing a file, there is an optional epoch input keyword.  If not
+    provided the output will be a v1.1 file with full proper motion
+    information saved in the file.  If it is provided, the positions are
+    converted to that epoch and a v1.0 file is written.   This is ignored
+    for v1.0 input through the arguments.

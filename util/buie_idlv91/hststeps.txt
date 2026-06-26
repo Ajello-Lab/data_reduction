@@ -1,0 +1,191 @@
+You do all work in the reduction area for your given dataset.
+There needs to be a config.ini file here with all the relevant information
+needed by all the tools.  Here's one example file:
+
+[id]
+type = hstast
+version = v1.0
+
+[global]
+subdir = 16112
+ndet = 2
+boxmrad = 3
+sdw = 50
+smcsamp = 10000
+tdw = 11
+tmcsamp = 10000
+addstars = manual
+filetype = flc
+satur = 80000
+fov = 140
+objectid = 2015094
+hstpsf = /net/frakir/raid/buie/hstpsf
+
+[ddir]
+d00 = /home/buie/Data
+d01 = /net/suhuy/raid3/buie/rawfits/hst
+
+Process a new visit
+
+  after downloading data (flc files) get data from headers into db
+
+IDL> hstloadhdr
+
+  this looks for new data in the directory and will scrape data from the
+  header and post to hstast.header
+
+Add references stars.  These instructions are for sparse fields.  There are
+two work flows that will work:
+
+Method 1: do one frame at a time    1-1-1-1-1-1-1-1-1-1-1-1-1-1
+
+  Mark the first reference star, detector choice here is arbitrary
+
+IDL> hstaddstar,'ie9g01rr',2,/post
+
+  Fit this one star.  The input string can be generic to the program.  It
+  only works on stars needing work and ignores those already done.
+
+IDL> hststarfit,'ie9g'
+
+  Update the WCS based on this one star.  Only changes those with changes.
+
+IDL> hstwcsupd,'ie9g' [,/verbose]
+
+  Now add all the rest of the stars you want.  You can add them one at a
+  time, fit, update wcs, or, identify all stars, one fit call, one update call.
+  Note that adding a star lets you add just one star.  Do as many times as
+  you want
+
+IDL> hstaddstar,'ie9g01rr',2,/post
+IDL> hststarfit,'ie9g'
+
+  Do the same for the other detector, then one final wcs update
+
+IDL> hstaddstar,'ie9g01rr',1,/post
+IDL> hststarfit,'ie9g'
+IDL> hstwcsupd,'ie9g' [,/verbose]
+
+1-1-1-1-1-1-1-1-1-1-1-1-1-1
+
+Method 2: more batch-mode oriented  2-2-2-2-2-2-2-2-2-2-2-2-2-2
+
+  Do the first star on each frame
+
+IDL> hstaddstar,'ie9g01rr',2,/post
+IDL> hstaddstar,'ie9g01rs',2,/post
+IDL> hstaddstar,'ie9g01ru',2,/post
+IDL> hstaddstar,'ie9g01rw',2,/post
+IDL> hstaddstar,'ie9g01ry',2,/post
+
+  Fit and update wcs
+
+IDL> hststarfit,'ie9g'
+IDL> hstwcsupd,'ie9g' [,/verbose]
+
+  Add as many stars as you want on all frames both detectors), the orderr
+  of processing does not matter
+
+IDL> hstaddstar,'ie9g01rr',1,/post
+IDL> hstaddstar,'ie9g01rr',2,/post
+IDL> hstaddstar,'ie9g01rs',1,/post
+IDL> hstaddstar,'ie9g01rs',2,/post
+IDL> hstaddstar,'ie9g01ru',1,/post
+IDL> hstaddstar,'ie9g01ru',2,/post
+IDL> hstaddstar,'ie9g01rw',1,/post
+IDL> hstaddstar,'ie9g01rw',2,/post
+IDL> hstaddstar,'ie9g01ry',1,/post
+IDL> hstaddstar,'ie9g01ry',2,/post
+
+  Do the fitting then update WCS.  If there are enough stars to process the
+  fitter can be run in multiple IDL sessions to speed things up.  You do
+  want to edit the bad pixels out before generating the PDF to save a lot of
+  time.
+
+    select min(idx),max(idx) from stars where xerr = -1;
+
+    select stars.idx,root,dw,xmax,ymax,x,y,flux,info,tstamp from stars,header
+    where stars.hidx=header.idx and stars.idx>=202 order by stars.idx;
+
+IDL> hsteditmask,2,/star    (use the index number here)
+
+IDL> hststarfit,'ie9g'
+
+2-2-2-2-2-2-2-2-2-2-2-2-2-2
+
+  Once you have all the stars you want, generate the star PDFs.  This is the
+  longest step but it's all computer crunching.  The first form is if you just
+  want to run one copy on a machine.  Leave off /multithread if you want to
+  run multiple copies and you'll be able to run one for every CPU.
+
+IDL> hststarerr,'ie9g',/multithread
+
+  Generate plots for the stars from their PDFs.  It's probably a good idea to
+  look through these.  If you see something bad, you can (manually) edit the
+  database and set flag='b' for the offending stars.  Note that there are useful
+  values written to the database as well.
+
+IDL> hstspdfp [,maxtodo=]
+IDL> hstwcsupd,'ie9g' [,/verbose]
+
+----------
+
+Now deal with the target
+
+  The first step pulls out a sub-array on or near the target.  This uses
+  the ephemeris to drive the extraction.  Nothing is saved to the database.
+  Everything is done with the saved files to the local directory.  This tool
+  doesn't care if you've done it before or not.  The optional offset is in
+  pixels.  It checks both detectors looking for the object.  If the target is
+  in the sub-array, you are good.  No need for fine-tuning here.
+
+IDL> hstextract,'ie9g01'  [,offset=[x,y]]
+
+  The next step is to get a good starting location for the target.  The name
+  is used to identify the thing you are measuring.  There can be more than one
+  object per image.  The id is what will be used in building the astrometry
+  output file, suitable for reporting to the MPC, JPL, or someone else where it
+  is important to provide an official name for the object.
+
+IDL> hstmeasure,'ie9g01rrq_1_sub.fits','Polymele','15094'  [,/show]
+
+  At this point it is worth editing out bad pixels.  This goes for stars
+  as well as the objects.  But, it might be worthwhile to have done the
+  stars before the hststarerr step.  Any source that is tweaked for bad pixels
+  will be reset in the database and require re-fitting and such.  You do this
+  by the index number of the target (from pos) or star (from stars).
+
+IDL> hsteditmask,6   [,/star]
+
+  Now we're ready to fit the target.  This can be run on multiple cpus as well
+  but usually the workload is low enough that this isn't often done.
+
+IDL> hsttargfit,'ie9g01'
+
+  Next, generate the errors
+
+IDL> hsttargerr,'ie9g01',/multithread  [,maxtodo=1]
+
+  Generate the summary plots.  Position errors are added to the database.
+  You will be able to see what bad pixels have been flagged.
+
+IDL> hsttpdfp [,maxtodo=]
+
+  At this step, it's best to make sure the WCS is full up to date.  It's fast
+  to do.
+
+IDL> hstwcsupd,'ie9g',/force
+
+  It's time for the WCS pdf generation.  This could be done earlier but I like
+  to do it here to make sure it's working against final results.
+
+IDL> hstwcspdf,'ie9g'
+
+  The last step (for feeding into Simon's tools) is to generate the final
+  PDF of the target measurement:
+
+IDL> hstfinalpdf,'ie9g'
+
+  There are pdf files written A + target index that contain the final answer.
+  It will be another step to build something like an ADES submission
+  file for sending to JPL or the MPC.
