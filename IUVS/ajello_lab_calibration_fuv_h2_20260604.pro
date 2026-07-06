@@ -17,8 +17,8 @@ pro ajello_lab_calibration_fuv_h2_20260604
       path_save = '/users/holsclaw/Documents/'
     end
     'benjamincondit': begin
-      file_path = '/Users/benjamincondit/Desktop/IUVS_Breadboard/Round 7/data_reduction/'
-      path_save = '/Users/benjamincondit/Desktop/Sensitivity_Data'
+      file_path = '/Users/benjamincondit/Desktop/H2 100eV Post-Incident/'
+      path_save = '/Users/benjamincondit/Desktop/Sensitivity_Data1/'
     end
   endcase
 
@@ -29,19 +29,22 @@ pro ajello_lab_calibration_fuv_h2_20260604
   keyword_3 = 'IMAGE1' ; see above ^^^^
 
   ; Files to be analyzed
-  folder_searcher, file_path, type, keyword_1, keyword_2, keyword_3, files
+  folder_searcher, file_path, type, keyword_1, keyword_2 = keyword_2, keyword_3 = keyword_3, files
 
   for j = 0, n_elements(files) - 1 do begin
     print, 'File:' + string(j)
 
     ; restore,file_data,/ver
     sObj = obj_new('IDL_Savefile', files[j])
-    sObj.restore, 'arr'
+    sObj.restore, ['arr', 'sig_Light', 'sig_dark', 'ARR_DARK_SDV', 'ARR_LIGHT_SDV']
     arr = float(arr)
     obj_destroy, sObj
 
+    count_light = n_elements(sig_light)
+    count_dark = n_elements(sig_dark)
+
     temp = strsplit(files[j], '/', /extract)
-    id1 = temp[-3] + '_' + file_basename(temp[-1], type)
+    id1 = temp[-2] + '_' + file_basename(temp[-1], type)
 
     spat = total(arr, 1)
     y0 = where(spat eq max(spat))
@@ -75,7 +78,7 @@ pro ajello_lab_calibration_fuv_h2_20260604
 
     ; derive the sensitivity
     ;
-    ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, wl1, wl2 ; , $
+    ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, wl1, wl2, sig_ref ; , $
     ; show_plots=show_plots
 
     ; identify the wavelength region that will be used for normalization
@@ -88,14 +91,29 @@ pro ajello_lab_calibration_fuv_h2_20260604
     ndx_ref = where(wl_ref gt wln1 and wl_ref lt wln2, count_ref)
     ndx_sens = findndx(wl_sens, wlnc)
     sens_norm = sens / sens[ndx_sens]
+    n_peaks = n_elements(wl1)
 
+    ; Calcs std. error
+    arr_light_err = ARR_LIGHT_SDV / sqrt(count_light)
+    arr_dark_err = ARR_DARK_SDV / sqrt(count_dark)
+    arr_err = sqrt(arr_light_err ^ 2 + arr_dark_err ^ 2)
+    spec_err = sqrt(total(arr_err[*, y1 : y2] ^ 2, 2))
+    wln1_pixel = (wl1 * 10. - 1073.3487) / 0.8313
+    wln2_pixel = (wl2 * 10. - 1073.3487) / 0.8313
+
+    sens_err = fltarr(n_peaks)
+    for i = 0, n_peaks - 1 do begin
+      sens_err[i] = sqrt(total(spec_err[wln1_pixel[i] : wln2_pixel[i]] ^ 2)) / sig_ref[i]
+    endfor
+
+    sens_err_norm = sens_err / sens[ndx_sens]
     ; write out sensitivity to text file
     ;
     file_out = path_save + id1 + '.txt'
     num_sens = n_elements(wl_sens)
     openw, fid, file_out, /get_lun
     for i = 0, num_sens - 1 do $
-      printf, fid, wl_sens[i], sens_norm[i], format = '(F10.2,",",F10.6)'
+      printf, fid, wl_sens[i], sens_norm[i], sens_err_norm[i], format = '(F10.2,",",F10.6,",",F10.8)'
     close, fid
     free_lun, fid
 
@@ -104,8 +122,7 @@ pro ajello_lab_calibration_fuv_h2_20260604
     p1 = plot(wl_spec, spec / max(spec[ndx_spec]), yr = [0, 1.4], current = win, $
       thick = 2, font_size = 16, xr = xr, xtitle = 'wavelength (nm)', title = id1, name = 'data')
     p2 = plot(wl_ref, ref / max(ref[ndx_ref]), /over, color = 'red', thick = 2, name = 'reference')
-    p3 = plot(wl_sens, sens / sens[ndx_sens] / 2., /over, symbol = 'o', /sym_filled, linestyle = 2, name = 'sensitivity')
-    n_peaks = n_elements(wl1)
+    p3 = errorplot(wl_sens, sens / sens[ndx_sens] / 2., sens_err / sens[ndx_sens] / 2., /over, symbol = 'o', /sym_filled, linestyle = 2, name = 'sensitivity')
     for i = 0, n_peaks - 1 do $
       pi = plot_shade(p1, wl1[i], wl2[i], fill_transparency = ((i mod 2) * 20 + 70), fill_color = 'blue')
     leg = legend(target = [p1, p2, p3], position = [0.9, 0.9], /relative, font_size = 14)

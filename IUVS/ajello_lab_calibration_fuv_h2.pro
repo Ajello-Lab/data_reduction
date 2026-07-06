@@ -17,7 +17,7 @@
 ;   the full path to the N2 LBH model file.
 ;
 pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
-  wl1, wl2, $
+  wl1, wl2, sig_ref, $
   show_plots = show_plots, $
   file_h2_model = file_h2_model
   compile_opt idl2

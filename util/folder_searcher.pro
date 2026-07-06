@@ -25,6 +25,8 @@ pro folder_searcher, folder_path, file_type, keyword_1, files, keyword_2 = keywo
 
   files = file_search(folder_path + '*' + file_type, count = file_count)
 
+  if file_count eq 0 then message, 'No files of ' + file_type + ' found in ' + folder_path
+
   contains_k1 = intarr(file_count)
   contains_k2 = intarr(file_count)
   contains_k3 = intarr(file_count)
