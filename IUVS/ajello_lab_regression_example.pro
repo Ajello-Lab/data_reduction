@@ -8,6 +8,16 @@
 ;
 ; KEYWORDS
 ;-
+
+pro mlr_no_intercept, X, A, F
+  sz = size(x,/dim)
+  f = fltarr(sz[1])
+  for i = 0, sz[0] - 1 do $
+    f += a[i] * X[*,i]
+
+  ;f = transpose(f)
+END
+
 pro ajello_lab_regression_example
 
   ajello_lab_set_paths, path_base, path_repo
@@ -54,12 +64,20 @@ pro ajello_lab_regression_example
   wave_lbh = wave / 10.
 
   lbh_orig = lbh
+  
+  ;
+  ; Add in a component representing the N atomic emission feature at 149.3 nm
+  ;
+  sz = size(lbh,/dim)
+  lbh = fltarr( sz[0], sz[1] + 1 )
+  lbh[*,0:6] = lbh_orig
+  n = findndx( wave_lbh, 149.3 )
+  lbh[n,7] = 0.1 
   ;
   ; convolve each rotational band by the PSF
   ;
-  for i=0, ((size(lbh))[2]-1) do begin 
+  for i=0, ((size(lbh))[2]-1) do $ 
     lbh[*, i] = convol(lbh[*, i], psf)
-  endfor
 
   p1 = plot( wave, lbh_orig[*,0] )
   p2 = plot( wave, lbh[*,0]/total(psf), /over, color='red' )
@@ -118,12 +136,15 @@ pro ajello_lab_regression_example
    
   ajello_lab_sensitivity_fuv_2026_07, wave_spec, sens
 
-  w1 = 128.5
-  w2 = 148.4
+  ;
+  ; normalization wavelength range
+  ;
+  w1_norm = 128.5
+  w2_norm = 148.4
   
   spec_cal = spec / sens
-  ndx_spec_norm = where( wave_spec gt w1 and wave_spec lt w2 )
-  ndx_lbh_norm = where( wave_lbh gt w1 and wave_lbh lt w2 )
+  ndx_spec_norm = where( wave_spec gt w1_norm and wave_spec lt w2_norm )
+  ndx_lbh_norm = where( wave_lbh gt w1_norm and wave_lbh lt w2_norm )
   
   spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) / mean(deriv(wlfuv))
   
@@ -150,7 +171,9 @@ pro ajello_lab_regression_example
   ;
   ; limit the regression to only the range available in the model 
   ;
-  ndx_wave_fit = where( wave_spec gt 115 and wave_spec lt 186.2 )
+  wl1_fit = 126.0
+  wl2_fit = 186.2
+  ndx_wave_fit = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
 
   ;
   ; perform regression
@@ -178,6 +201,7 @@ pro ajello_lab_regression_example
   p6 = plot( wave_spec, lbhi_norm[*,4]*r[0,4], /over, color='blue', thick=thick )
   p7 = plot( wave_spec, lbhi_norm[*,5]*r[0,5], /over, color='indigo', thick=thick )
   p8 = plot( wave_spec, lbhi_norm[*,6]*r[0,6], /over, color='violet', thick=thick )
+  p9 = plot( wave_spec, lbhi_norm[*,7]*r[0,7], /over, color='red', thick=thick )
   markerp,p1,y=const,linestyle=2
   
   ;
@@ -194,6 +218,25 @@ pro ajello_lab_regression_example
   p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick )
   p2 = plot( wave_spec, lbh_fit_tot + const, color='red', /over )
   
+  
+  ; Initial guess for the 2 slope coefficients
+  weights_guess = fltarr(n_elements(r))+1.0
+
+  ;Result = CURVEFIT( X, Y, Weights, A [, Sigma] [, CHISQ=variable] 
+  ;[, /DOUBLE] [, FITA=vector] [, FUNCTION_NAME=string] [, ITER=variable] 
+  ;[, ITMAX=value] [, /NODERIVATIVE] [, STATUS={0 | 1 | 2}] 
+  ;[, TOL=value] [, YERROR=variable] )
+  
+  stop
+  
+  ; Perform the fit forcing zero intercept
+  a = fltarr(n_elements(r))+1.0 
+  xt = transpose(x)
+  xt = x
+  y = transpose(y)
+  param = curvefit( xt, y, weights_guess, a, FUNCTION_NAME='mlr_no_intercept', /NODERIVATIVE) ;
+
+  mlr_no_intercept, X, A, F
   
   stop
   

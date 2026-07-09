@@ -42,13 +42,17 @@ pro ajello_lab_sensitivity_fuv_2026_07, wave_out, sens_out
   sens_out = 10.^( interpol( alog10(sens), wave_sens, wave_out ) )
   
   if n_params() eq 0 then begin
+    sens2 = interpol( sens, wave_sens, wave_out )
+
     p1 = plot( wave_sens, sens, /ylog )
     p2 = plot( wave_out, sens_out, /over, color='red' )
     p3 = plot( wave_sens, sens, /over, thick=2 )
+    p4 = plot( wave_out, sens2, /over, thick=2, color='blue' )
     
     p1 = plot( wave_sens, sens )
     p2 = plot( wave_out, sens_out, /over, color='red' )
     p3 = plot( wave_sens, sens, /over, thick=2, symbol='o', /sym_filled )
+    p4 = plot( wave_out, sens2, /over, thick=2, color='blue' )
     
     stop
   endif
