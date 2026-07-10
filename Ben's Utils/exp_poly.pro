@@ -10,7 +10,7 @@ pro exp_poly, X, A, F, pder
   bb = A[1]
   cc = A[2]
   Z = X + cc
-  F = aa * Z ^ 2.0d * exp(bb * Z)
+  F = aa * Z ^ 2.0d * exp(bb * Z) + 0.049990699
 
   if n_params() ge 4 then $
     pder = [[Z ^ 2.0d * exp(bb * Z)], $

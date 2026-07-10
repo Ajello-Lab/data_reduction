@@ -74,7 +74,7 @@ pro ajello_lab_process_driver
   ; path_data_exp = path_base+dataset_id+path_sep() + 'CO2/30eV/test8_image1/'
   ; path_data_exp = path_base+dataset_id+path_sep() + 'CO2/100eV/test6_image1/'
 
-  ; Run by ben on 6/29 : <start>
+  ; Run by ben starting on 6/29 : <start>
   ; path_data_exp = path_base + dataset_id + path_sep() + 'H2/100eV/Test1_Image1/'
   ; path_data_exp = path_base + dataset_id + path_sep() + 'H2/100eV/test2_image2/'
   ; ; path_data_exp = path_base + dataset_id + path_sep() + 'H2/100eV/test3_image3/'
@@ -104,7 +104,11 @@ pro ajello_lab_process_driver
   ; 'N2/100eV/test8_image2/', 'N2/100eV/test9_image3/', 'N2/100eV/test10_image3/', 'N2/100eV/test11_image1/', 'N2/100eV/test12_image2/', $
   ; 'N2/100eV/test14_image1/', 'N2/100eV/test15_image3/', 'N2/100eV/test16_image2/']
   ; path_data_list = ['N2/10eV/test23_image2/']
-  path_data_list = ['N2/9eV/test26_image1/', 'N2/12eV/test24_image2/', 'N2/12eV/test25_image2/', 'N2/16eV/test27_image1/']
+  ; path_data_list = ['N2/9eV/test26_image1/', 'N2/12eV/test24_image2/', 'N2/12eV/test25_image2/', 'N2/16eV/test27_image1/']
+  ; path_data_list = ['N2/16eV/test28_image2/']
+  ; path_data_list = ['N2/16eV/test29_image3/', 'N2/20eV/test30_image3/']
+  ; path_data_list = ['N2/20eV/test31_image1/', 'N2/20eV/test32_image2/', 'N2/14eV/test33_image1/']
+  path_data_list = ['N2/14eV/test34_image2/']
 
   ; <end>
 
