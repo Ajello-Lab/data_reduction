@@ -13,7 +13,7 @@ pro mlr_no_intercept, X, A, F
   sz = size(x,/dim)
   f = fltarr(sz[1])
   for i = 0, sz[0] - 1 do $
-    f += a[i] * X[*,i]
+    f += abs(a[i]) * X[i,*]
 
   ;f = transpose(f)
 END
@@ -64,31 +64,58 @@ pro ajello_lab_regression_example
   wave_lbh = wave / 10.
 
   lbh_orig = lbh
+  lbh_orig_tot = total( lbh_orig, 2 )
+
+  ajello_lab_nitrogen_emission_nist, arr_nist
+  
+  wl1_fit = 126.5
+  ;wl1_fit = 125.0
+  ;wl2_fit = 186.2
+  wl2_fit = 155.0
+
+  n = where( (arr_nist.ion eq 1) and $
+             (arr_nist.rel_int gt 0.) and $
+             (arr_nist.wave_obs ge wl1_fit) and $
+             (arr_nist.wave_obs le wl2_fit), num_atomic )
+
+  arr_nist = arr_nist[n]
   
   ;
-  ; Add in a component representing the N atomic emission feature at 149.3 nm
+  ; Include atomic emissions
   ;
   sz = size(lbh,/dim)
-  lbh = fltarr( sz[0], sz[1] + 1 )
-  lbh[*,0:6] = lbh_orig
-  n = findndx( wave_lbh, 149.3 )
-  lbh[n,7] = 0.1 
+  num_wave_lbh = sz[0]
+  num_band_lbh = sz[1]
+
+  model1 = fltarr( num_wave_lbh, num_band_lbh + num_atomic )
+  model1[*, 0:num_band_lbh-1] = lbh_orig  
+  for i = 0, num_atomic - 1 do begin
+    n = findndx( wave_lbh, arr_nist[i].wave_obs )
+    model1[ n, num_band_lbh + i ] = arr_nist[i].rel_int / max(arr_nist.rel_int) * max(lbh_orig_tot)
+  endfor
+  
+  num_feat = num_band_lbh + num_atomic
+  
   ;
   ; convolve each rotational band by the PSF
   ;
-  for i=0, ((size(lbh))[2]-1) do $ 
-    lbh[*, i] = convol(lbh[*, i], psf)
+  model = model1
+  for i = 0, num_feat - 1 do $ 
+    model[*, i] = convol( model1[*, i], psf )
 
-  p1 = plot( wave, lbh_orig[*,0] )
-  p2 = plot( wave, lbh[*,0]/total(psf), /over, color='red' )
+;  p1 = plot( wave, lbh_orig[*,0] )
+;  p2 = plot( wave, lbh[*,0]/total(psf), /over, color='red' )
 
-  lbh_orig_tot = total( lbh_orig, 2 )
-  lbh_tot = total( lbh, 2 ) / total(psf)
+  lbh_tot = total( model[*,0:num_band_lbh-1], 2 ) / total(psf)
 
   p1 = plot( wave, lbh_orig_tot )
   p2 = plot( wave, lbh_tot, /over, color='red' )
   ; peak at 1354 angstroms
 
+  k = 0
+  p1 = plot( wave_lbh, model1[*,k] / total(model1[*,k]) )
+  p2 = plot( wave_lbh, model[*,k] / total(model[*,k]), /over, color='red' )
+  
   stop
 
 
@@ -106,7 +133,7 @@ pro ajello_lab_regression_example
   ;
   ; create a single spectrum
   ;
-  y1_key = 130;outside key hole
+  y1_key = 130 ;outside key hole
   y2_key = 940
   
   ndx_spat_peak = findndx( spat, max(spat) )
@@ -124,16 +151,22 @@ pro ajello_lab_regression_example
 
   ndx_spec_peak = findndx( spec, max(spec) )
   
+  ;
+  ; retrieve a notional wavelength scale
+  ;
   ajello_lab_pixel_scale_rot, wlfuv, wlmuv, yfuv, ymuv
 
-  p1 = plot( wlfuv, spec, xtitle='wavelength guess (nm)' )
-  markerp,p1,x=135.4,linestyle=2
+;  p1 = plot( wlfuv, spec, xtitle='wavelength guess (nm)' )
+;  markerp,p1,x=135.4,linestyle=2
   
   wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 120.0
   
-  p1 = plot( wave_spec, spec )
+  p1 = plot( wave_spec, spec, xtitle='wavelength scale corrected (nm)' )
   markerp,p1,x=120.0
    
+  ; 
+  ; retrieve sensitivity
+  ;
   ajello_lab_sensitivity_fuv_2026_07, wave_spec, sens
 
   ;
@@ -148,7 +181,13 @@ pro ajello_lab_regression_example
   
   spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) / mean(deriv(wlfuv))
   
-  spec_cal_norm >= 0.
+  ;
+  ; force the observed data to be positive
+  ;
+  ;spec_cal_norm >= 0.
+  ;
+  ; force observed data out of band to be zero
+  ;
   ndx_out = where( wave_spec lt 115., count )
   spec_cal_norm[ndx_out] = 0.
   
@@ -162,81 +201,151 @@ pro ajello_lab_regression_example
   ;
   ; interpolate the model to the wavelength scale of the data
   ;
-  nwave_spec = n_elements(wave_spec) 
-  num_vecs = n_elements(lbh[0,*])
-  lbhi_norm = fltarr(nwave_spec, num_vecs)
-  for i=0, ((size(lbh))[2]-1) do $
-    lbhi_norm[*,i] = interpol( lbh[*,i], wave_lbh, wave_spec )
+  num_wave_spec = n_elements( wave_spec ) 
+  modeli = fltarr( num_wave_spec, num_feat )
+  for i = 0, num_feat - 1 do $
+    modeli[*,i] = interpol( model[*,i], wave_lbh, wave_spec )
 
   ;
   ; limit the regression to only the range available in the model 
   ;
-  wl1_fit = 126.0
-  wl2_fit = 186.2
   ndx_wave_fit = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
 
-  ;
-  ; perform regression
-  ;
+  ;-----------------------------------------------------------------------
+  ; REGRESS
+  ;-----------------------------------------------------------------------
+
   ;Result = REGRESS( X, Y, [, CHISQ=variable] [, CONST=variable] [, CORRELATION=variable]
   ;[, /DOUBLE] [, FTEST=variable] [, MCORRELATION=variable] [, MEASURE_ERRORS=vector]
   ;[, SIGMA=variable] [, STATUS=variable] [, YFIT=variable] )
   ;
   wave_spec_fit = wave_spec[ndx_wave_fit]
-  x = transpose( lbhi_norm[ndx_wave_fit,*] )
+  x = transpose( modeli[ndx_wave_fit,*] )
   y = spec_cal_norm[ndx_wave_fit]
   measure_errors = sqrt(y)
   ;
-  r = regress( x, y, const=const ) ;, measure_errors=measure_errors
+  r = regress( x, y, const=const, yfit=yfit ) ;, measure_errors=measure_errors
   
+  spec_fit = fltarr(num_wave_spec)
+  for i = 0, num_feat - 1 do $
+    spec_fit += modeli[*,i] * r[0,i]
+  spec_fit += const
   
-  
-  win = window(dim=[800,600])
+  win = window(dim=[1200,800])
   thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick )
-  p2 = plot( wave_spec, lbhi_norm[*,0]*r[0,0], /over, color='red', thick=thick )
-  p3 = plot( wave_spec, lbhi_norm[*,1]*r[0,1], /over, color='orange', thick=thick )
-  p4 = plot( wave_spec, lbhi_norm[*,2]*r[0,2], /over, color='yellow', thick=thick )
-  p5 = plot( wave_spec, lbhi_norm[*,3]*r[0,3], /over, color='green', thick=thick )
-  p6 = plot( wave_spec, lbhi_norm[*,4]*r[0,4], /over, color='blue', thick=thick )
-  p7 = plot( wave_spec, lbhi_norm[*,5]*r[0,5], /over, color='indigo', thick=thick )
-  p8 = plot( wave_spec, lbhi_norm[*,6]*r[0,6], /over, color='violet', thick=thick )
-  p9 = plot( wave_spec, lbhi_norm[*,7]*r[0,7], /over, color='red', thick=thick )
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], title='regress',layout=[1,2,1] )
+  ;p2 = plot( wave_spec_fit, yfit, color='red', /over )
+  p3 = plot( wave_spec, spec_fit, color='red', /over )
+  markerp,p1,x=wl1_fit,linestyle=2
+  markerp,p1,x=wl2_fit,linestyle=2
+  ;
+  ;win = window(dim=[800,600])
+  thick = 2
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
+  p2 = plot( wave_spec, modeli[*,0]*r[0,0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, modeli[*,1]*r[0,1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, modeli[*,2]*r[0,2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, modeli[*,3]*r[0,3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, modeli[*,4]*r[0,4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, modeli[*,5]*r[0,5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, modeli[*,6]*r[0,6], /over, color='violet', thick=thick )
+  for i = 0, num_atomic - 1 do $
+    pi = plot( wave_spec, modeli[*,7+i]*r[0,7+i], /over, color='red', thick=thick )
   markerp,p1,y=const,linestyle=2
-  
-  ;
-  ; create weighted model vectors
-  ;
-  lbh_fit = lbhi_norm
-  for i=0, ((size(lbh))[2]-1) do $
-    lbh_fit[*,i] = lbhi_norm[*,i] * r[0,i]
+  ;win.save, path_save + 'ajello_lab_regress.png'
 
-  lbh_fit_tot = total( lbh_fit, 2 )
   
-  win = window(dim=[800,600])
-  thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick )
-  p2 = plot( wave_spec, lbh_fit_tot + const, color='red', /over )
+  ;-----------------------------------------------------------------------
+  ; CURVEFIT
+  ;-----------------------------------------------------------------------
   
-  
-  ; Initial guess for the 2 slope coefficients
-  weights_guess = fltarr(n_elements(r))+1.0
-
   ;Result = CURVEFIT( X, Y, Weights, A [, Sigma] [, CHISQ=variable] 
   ;[, /DOUBLE] [, FITA=vector] [, FUNCTION_NAME=string] [, ITER=variable] 
   ;[, ITMAX=value] [, /NODERIVATIVE] [, STATUS={0 | 1 | 2}] 
   ;[, TOL=value] [, YERROR=variable] )
   
-  stop
-  
-  ; Perform the fit forcing zero intercept
-  a = fltarr(n_elements(r))+1.0 
-  xt = transpose(x)
-  xt = x
-  y = transpose(y)
-  param = curvefit( xt, y, weights_guess, a, FUNCTION_NAME='mlr_no_intercept', /NODERIVATIVE) ;
+  r2 = fltarr(num_feat)+1.0 
+  weights = 1./y
+  model_fit_tot2 = curvefit( x, y, weights, r2, FUNCTION_NAME='mlr_no_intercept', /NODERIVATIVE) ;
 
-  mlr_no_intercept, X, A, F
+  spec_fit = fltarr(num_wave_spec)
+  for i = 0, num_feat - 1 do $
+    spec_fit += modeli[*,i] * r2[i]
+
+  win = window(dim=[1200,800])
+  thick = 2
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], title='curvefit',layout=[1,2,1] )
+  p2 = plot( wave_spec_fit, model_fit_tot2, color='red', /over )
+  p3 = plot( wave_spec, spec_fit, color='blue', /over )
+  markerp,p1,x=wl1_fit,linestyle=2
+  markerp,p1,x=wl2_fit,linestyle=2
+  ;
+  ;win = window(dim=[800,600])
+  thick = 2
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185],layout=[1,2,2] )
+  p2 = plot( wave_spec, modeli[*,0]*r2[0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, modeli[*,1]*r2[1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, modeli[*,2]*r2[2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, modeli[*,3]*r2[3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, modeli[*,4]*r2[4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, modeli[*,5]*r2[5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, modeli[*,6]*r2[6], /over, color='violet', thick=thick )
+  for i = 0, num_atomic - 1 do $
+    pi = plot( wave_spec, modeli[*,7+i]*r2[7+i], /over, color='red', thick=thick )
+  ;win.save, path_save + 'ajello_lab_curvefit.png'
+
+
+  ;-----------------------------------------------------------------------
+  ; MPCURVEFIT
+  ;-----------------------------------------------------------------------
+
+;   YFIT = MPCURVEFIT(X, Y, WEIGHTS, P, [SIGMA,] FUNCTION_NAME=FUNC,
+;                     ITER=iter, ITMAX=itmax,
+;                     CHISQ=chisq, NFREE=nfree, DOF=dof,
+;                     NFEV=nfev, COVAR=covar, [/NOCOVAR, ] [/NODERIVATIVE, ]
+;                     FUNCTARGS=functargs, PARINFO=parinfo,
+;                     FTOL=ftol, XTOL=xtol, GTOL=gtol, TOL=tol,
+;                     ITERPROC=iterproc, ITERARGS=iterargs,
+;                     NPRINT=nprint, QUIET=quiet,
+;                     ERRMSG=errmsg, STATUS=status)
+ 
+
+  weights = 1./y
+  r3 = reform(r) > 0.
+  xtol = 1D-10 ; default
+  xtol = 4D-10
+  parinfo = replicate({value:0.D, fixed:0, limited:[0,0], limits:[0.D,0]}, $
+    num_feat)
+  parinfo.limited[0] = 1
+  yfit = MPCURVEFIT( X, Y, WEIGHTS, r3, /NODERIVATIVE, parinfo=parinfo, $
+    FUNCTION_NAME='mlr_no_intercept', status=status, xtol=xtol, $
+    ERRMSG=errmsg )
+      
+  spec_fit = fltarr(num_wave_spec)
+  for i = 0, num_feat - 1 do $
+    spec_fit += modeli[*,i] * r3[i]
+
+  win = window(dim=[1200,800])
+  thick = 2
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='mpcurvefit' )
+  ;p2 = plot( wave_spec_fit, yfit, color='red', /over )
+  p3 = plot( wave_spec, spec_fit, color='red', /over )
+  markerp,p1,x=wl1_fit,linestyle=2
+  markerp,p1,x=wl2_fit,linestyle=2
+  ;
+  ;win = window(dim=[1200,600])
+  thick = 2
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
+  p2 = plot( wave_spec, modeli[*,0]*r3[0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, modeli[*,1]*r3[1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, modeli[*,2]*r3[2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, modeli[*,3]*r3[3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, modeli[*,4]*r3[4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, modeli[*,5]*r3[5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, modeli[*,6]*r3[6], /over, color='violet', thick=thick )
+  for i = 0, num_atomic - 1 do $
+    pi = plot( wave_spec, modeli[*,7+i]*r3[7+i], /over, color='red', thick=thick )
+  ;win.save, path_save + 'ajello_lab_mpcurvefit.png'
   
   stop
   
