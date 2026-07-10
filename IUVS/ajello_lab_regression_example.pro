@@ -14,8 +14,6 @@ pro mlr_no_intercept, X, A, F
   f = fltarr(sz[1])
   for i = 0, sz[0] - 1 do $
     f += abs(a[i]) * X[i,*]
-
-  ;f = transpose(f)
 END
 
 pro ajello_lab_regression_example
@@ -222,36 +220,38 @@ pro ajello_lab_regression_example
   wave_spec_fit = wave_spec[ndx_wave_fit]
   x = transpose( modeli[ndx_wave_fit,*] )
   y = spec_cal_norm[ndx_wave_fit]
+  ; regress help: "For Poisson or statistical weighting, MEASURE_ERRORS should be set to SQRT(Y)."
   measure_errors = sqrt(y)
   ;
-  r = regress( x, y, const=const, yfit=yfit ) ;, measure_errors=measure_errors
+  param = regress( x, y, const=const, yfit=yfit, measure_errors=measure_errors )
   
-  spec_fit = fltarr(num_wave_spec)
+  model_fit_arr = fltarr( num_wave_spec, num_feat )
   for i = 0, num_feat - 1 do $
-    spec_fit += modeli[*,i] * r[0,i]
-  spec_fit += const
-  
+    model_fit_arr[*,i] = modeli[*,i] * param[i]
+
+  spec_fit = total( model_fit_arr, 2 ) + const
+
   win = window(dim=[1200,800])
   thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], title='regress',layout=[1,2,1] )
-  ;p2 = plot( wave_spec_fit, yfit, color='red', /over )
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='regress' )
+  ;p2 = plot( wave_spec_fit, yfit2, color='red', /over )
   p3 = plot( wave_spec, spec_fit, color='red', /over )
   markerp,p1,x=wl1_fit,linestyle=2
   markerp,p1,x=wl2_fit,linestyle=2
   ;
-  ;win = window(dim=[800,600])
+  ;win = window(dim=[1200,600])
   thick = 2
   p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
-  p2 = plot( wave_spec, modeli[*,0]*r[0,0], /over, color='red', thick=thick )
-  p3 = plot( wave_spec, modeli[*,1]*r[0,1], /over, color='orange', thick=thick )
-  p4 = plot( wave_spec, modeli[*,2]*r[0,2], /over, color='yellow', thick=thick )
-  p5 = plot( wave_spec, modeli[*,3]*r[0,3], /over, color='green', thick=thick )
-  p6 = plot( wave_spec, modeli[*,4]*r[0,4], /over, color='blue', thick=thick )
-  p7 = plot( wave_spec, modeli[*,5]*r[0,5], /over, color='indigo', thick=thick )
-  p8 = plot( wave_spec, modeli[*,6]*r[0,6], /over, color='violet', thick=thick )
+  p2 = plot( wave_spec, model_fit_arr[*,0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, model_fit_arr[*,1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, model_fit_arr[*,2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, model_fit_arr[*,3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, model_fit_arr[*,4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, model_fit_arr[*,5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, model_fit_arr[*,6], /over, color='violet', thick=thick )
   for i = 0, num_atomic - 1 do $
-    pi = plot( wave_spec, modeli[*,7+i]*r[0,7+i], /over, color='red', thick=thick )
-  markerp,p1,y=const,linestyle=2
+    pi = plot( wave_spec, model_fit_arr[*,7+i], /over, color='red', thick=thick )
+  ;win.save, path_save + 'ajello_lab_curvefit.png'
   ;win.save, path_save + 'ajello_lab_regress.png'
 
   
@@ -264,34 +264,38 @@ pro ajello_lab_regression_example
   ;[, ITMAX=value] [, /NODERIVATIVE] [, STATUS={0 | 1 | 2}] 
   ;[, TOL=value] [, YERROR=variable] )
   
-  r2 = fltarr(num_feat)+1.0 
+  param2 = fltarr(num_feat)
+  param2[*] = 1.0 
+  ; Curvefit help: "For statistical (Poisson) weighting, Weightsi = 1.0/Yi."
   weights = 1./y
-  model_fit_tot2 = curvefit( x, y, weights, r2, FUNCTION_NAME='mlr_no_intercept', /NODERIVATIVE) ;
+  yfit2 = curvefit( x, y, weights, param2, FUNCTION_NAME='mlr_no_intercept', /NODERIVATIVE) ;
 
-  spec_fit = fltarr(num_wave_spec)
+  model_fit_arr2 = fltarr( num_wave_spec, num_feat )
   for i = 0, num_feat - 1 do $
-    spec_fit += modeli[*,i] * r2[i]
+    model_fit_arr2[*,i] = modeli[*,i] * param2[i]
+
+  spec_fit2 = total( model_fit_arr2, 2 )
 
   win = window(dim=[1200,800])
   thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], title='curvefit',layout=[1,2,1] )
-  p2 = plot( wave_spec_fit, model_fit_tot2, color='red', /over )
-  p3 = plot( wave_spec, spec_fit, color='blue', /over )
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='curvefit' )
+  ;p2 = plot( wave_spec_fit, yfit2, color='red', /over )
+  p3 = plot( wave_spec, spec_fit2, color='red', /over )
   markerp,p1,x=wl1_fit,linestyle=2
   markerp,p1,x=wl2_fit,linestyle=2
   ;
-  ;win = window(dim=[800,600])
+  ;win = window(dim=[1200,600])
   thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185],layout=[1,2,2] )
-  p2 = plot( wave_spec, modeli[*,0]*r2[0], /over, color='red', thick=thick )
-  p3 = plot( wave_spec, modeli[*,1]*r2[1], /over, color='orange', thick=thick )
-  p4 = plot( wave_spec, modeli[*,2]*r2[2], /over, color='yellow', thick=thick )
-  p5 = plot( wave_spec, modeli[*,3]*r2[3], /over, color='green', thick=thick )
-  p6 = plot( wave_spec, modeli[*,4]*r2[4], /over, color='blue', thick=thick )
-  p7 = plot( wave_spec, modeli[*,5]*r2[5], /over, color='indigo', thick=thick )
-  p8 = plot( wave_spec, modeli[*,6]*r2[6], /over, color='violet', thick=thick )
+  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
+  p2 = plot( wave_spec, model_fit_arr2[*,0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, model_fit_arr2[*,1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, model_fit_arr2[*,2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, model_fit_arr2[*,3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, model_fit_arr2[*,4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, model_fit_arr2[*,5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, model_fit_arr2[*,6], /over, color='violet', thick=thick )
   for i = 0, num_atomic - 1 do $
-    pi = plot( wave_spec, modeli[*,7+i]*r2[7+i], /over, color='red', thick=thick )
+    pi = plot( wave_spec, model_fit_arr2[*,7+i], /over, color='red', thick=thick )
   ;win.save, path_save + 'ajello_lab_curvefit.png'
 
 
@@ -310,42 +314,75 @@ pro ajello_lab_regression_example
 ;                     ERRMSG=errmsg, STATUS=status)
  
 
+  ; MPCURVEFIT docs: WEIGHTS: "1D/Y     - Poisson weighting (counting statistics)"
   weights = 1./y
-  r3 = reform(r) > 0.
-  xtol = 1D-10 ; default
-  xtol = 4D-10
+  ;r3 = reform(r) > 0.
+  param3 = fltarr(num_feat)
+  param3[*] = 1.
+  ;xtol = 1D-10 ; default
+  ;xtol = 4D-10
   parinfo = replicate({value:0.D, fixed:0, limited:[0,0], limits:[0.D,0]}, $
     num_feat)
-  parinfo.limited[0] = 1
-  yfit = MPCURVEFIT( X, Y, WEIGHTS, r3, /NODERIVATIVE, parinfo=parinfo, $
-    FUNCTION_NAME='mlr_no_intercept', status=status, xtol=xtol, $
+  parinfo.limited[0] = 1  ; require all parameters to require specified lower bound
+  parinfo.limits[0] = 0.  ; set lower bound for all parameters to zero (i.e. positive)
+  yfit3 = MPCURVEFIT( X, Y, WEIGHTS, param3, /NODERIVATIVE, parinfo=parinfo, $
+    FUNCTION_NAME='mlr_no_intercept', status=status, $  ; , xtol=xtol
     ERRMSG=errmsg )
       
-  spec_fit = fltarr(num_wave_spec)
+  model_fit_arr3 = fltarr( num_wave_spec, num_feat )
   for i = 0, num_feat - 1 do $
-    spec_fit += modeli[*,i] * r3[i]
+    model_fit_arr3[*,i] = modeli[*,i] * param3[i]
+    
+  spec_fit3 = total( model_fit_arr3, 2 )
 
   win = window(dim=[1200,800])
   thick = 2
   p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='mpcurvefit' )
-  ;p2 = plot( wave_spec_fit, yfit, color='red', /over )
-  p3 = plot( wave_spec, spec_fit, color='red', /over )
+  ;p2 = plot( wave_spec_fit, yfit3, color='red', /over )
+  p3 = plot( wave_spec, spec_fit3, color='red', /over )
   markerp,p1,x=wl1_fit,linestyle=2
   markerp,p1,x=wl2_fit,linestyle=2
   ;
   ;win = window(dim=[1200,600])
   thick = 2
   p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
-  p2 = plot( wave_spec, modeli[*,0]*r3[0], /over, color='red', thick=thick )
-  p3 = plot( wave_spec, modeli[*,1]*r3[1], /over, color='orange', thick=thick )
-  p4 = plot( wave_spec, modeli[*,2]*r3[2], /over, color='yellow', thick=thick )
-  p5 = plot( wave_spec, modeli[*,3]*r3[3], /over, color='green', thick=thick )
-  p6 = plot( wave_spec, modeli[*,4]*r3[4], /over, color='blue', thick=thick )
-  p7 = plot( wave_spec, modeli[*,5]*r3[5], /over, color='indigo', thick=thick )
-  p8 = plot( wave_spec, modeli[*,6]*r3[6], /over, color='violet', thick=thick )
+  p2 = plot( wave_spec, model_fit_arr3[*,0], /over, color='red', thick=thick )
+  p3 = plot( wave_spec, model_fit_arr3[*,1], /over, color='orange', thick=thick )
+  p4 = plot( wave_spec, model_fit_arr3[*,2], /over, color='yellow', thick=thick )
+  p5 = plot( wave_spec, model_fit_arr3[*,3], /over, color='green', thick=thick )
+  p6 = plot( wave_spec, model_fit_arr3[*,4], /over, color='blue', thick=thick )
+  p7 = plot( wave_spec, model_fit_arr3[*,5], /over, color='indigo', thick=thick )
+  p8 = plot( wave_spec, model_fit_arr3[*,6], /over, color='violet', thick=thick )
   for i = 0, num_atomic - 1 do $
-    pi = plot( wave_spec, modeli[*,7+i]*r3[7+i], /over, color='red', thick=thick )
+    pi = plot( wave_spec, model_fit_arr3[*,7+i], /over, color='red', thick=thick )
   ;win.save, path_save + 'ajello_lab_mpcurvefit.png'
+  
+  
+  win = window(dim=[800,600])
+  yr = [ 0, max([param[0:num_band_lbh-1],param2[0:num_band_lbh-1],param3[0:num_band_lbh-1]])*1.1 ]
+  p1 = plot( param[0:num_band_lbh-1], yr=yr, current=win, symbol='o', /sym_filled, title='LBH band weights', name='regress', font_size=14 )
+  p2 = plot( param2[0:num_band_lbh-1], /over, color='red', symbol='o', /sym_filled, sym_color='red', name='curvefit' )
+  p3 = plot( param3[0:num_band_lbh-1], /over, color='blue', symbol='o', /sym_filled, sym_color='blue', name='mpcurvefit' )
+  leg = legend(target=[p1,p2,p3],position=[0.9,0.4])  
+
+  win = window(dim=[800,600])
+  yr = [ 0, max([param[num_band_lbh:num_feat-1],param2[num_band_lbh:num_feat-1],param3[num_band_lbh:num_feat-1]])*1.1 ]
+  x1 = arr_nist.wave_obs
+  p1 = plot( x1, param[num_band_lbh:num_feat-1], current=win, symbol='o', /sym_filled, name='regress', title='atomic emission weights', font_size=14 )  ; yr=yr, 
+  p2 = plot( x1, param2[num_band_lbh:num_feat-1], /over, color='red', symbol='o', /sym_filled, sym_color='red', name='curvefit' )
+  p3 = plot( x1, param3[num_band_lbh:num_feat-1], /over, color='blue', symbol='o', /sym_filled, sym_color='blue', name='mpcurvefit' )
+  markerp,p1,y=0,linestyle=2
+  p4 = plot( x1, arr_nist.rel_int / total(arr_nist.rel_int)*0.05, /over, color='green', symbol='o', /sym_filled, sym_color='green', name='NIST' )
+  leg = legend(target=[p1,p2,p3,p4],position=[0.9,0.4])
+
+  win = window(dim=[800,600])
+  yr = [ 0, max([param[num_band_lbh:num_feat-1],param2[num_band_lbh:num_feat-1],param3[num_band_lbh:num_feat-1]])*1.1 ]
+  p1 = plot( param[num_band_lbh:num_feat-1], current=win, symbol='o', /sym_filled, name='regress', title='atomic emission weights', font_size=14 )  ; yr=yr,
+  p2 = plot( param2[num_band_lbh:num_feat-1], /over, color='red', symbol='o', /sym_filled, sym_color='red', name='curvefit' )
+  p3 = plot( param3[num_band_lbh:num_feat-1], /over, color='blue', symbol='o', /sym_filled, sym_color='blue', name='mpcurvefit' )
+  markerp,p1,y=0,linestyle=2
+  p4 = plot( arr_nist.rel_int / total(arr_nist.rel_int)*0.05, /over, color='green', symbol='o', /sym_filled, sym_color='green', name='NIST' )
+  leg = legend(target=[p1,p2,p3,p4],position=[0.9,0.4])
   
   stop
   
