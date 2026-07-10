@@ -38,7 +38,6 @@ pro ajello_lab_h2_reference, wave, spec, $
     ; data = (read_ascii(file_1998,data_start=2)).(0)
     ; wl_1998 = reform(data[0,*])
     ; spec_1998 = reform(data[1,*])
-    ;
   endif
 
   if file_test(file_ref) eq 0 then begin
@@ -69,6 +68,8 @@ pro ajello_lab_h2_reference, wave, spec, $
     save, filename = file_save, file_ref, wave, spec, routine_name
   endif else begin
     restore, file_save
+    ajello_lab_set_paths, path_base, path_repo
+    file_ref = path_repo + 'data/H2/h2euv100.txt'
   endelse
 
   if keyword_set(show_plots) then begin

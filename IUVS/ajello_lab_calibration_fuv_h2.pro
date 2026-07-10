@@ -17,7 +17,7 @@
 ;   the full path to the N2 LBH model file.
 ;
 pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
-  wl1, wl2, $
+  wl1, wl2, sig_ref, $
   show_plots = show_plots, $
   file_h2_model = file_h2_model
   compile_opt idl2
@@ -47,6 +47,7 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
     sObj.restore, 'arr'
     obj_destroy, sObj
 
+    arr = float(arr)
     ;
     ; add up a subset of spatial rows centered on the emission peak
     ; to arrive at one representative spectrum
@@ -105,9 +106,9 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
     win = window(dim = [1200, 600])
     xr = [110, 170]
     p1 = plot(wave_ref / 10., spec_ref - min(spec_ref), yr = [0, 5.2e4], name = 'reference', xtitle = 'wavelength (nm)', current = win, xr = xr, font_size = 14)
-    p2 = plot(wl_spec, spec, /over, color = 'red', name = 'data')
+    p2 = plot(wl_spec, spec, font_size = 14, /over, color = 'red', name = 'data')
     ; p3 = plot(wl_spec, spec_deriv * 5000, /over, color = 'pink', name = 'slope')
-    leg = legend(target = [p1, p2], font_size = 14)
+    leg = legend(target = [p1, p2])
   endif
 
   ;
@@ -154,8 +155,8 @@ pro ajello_lab_calibration_fuv_h2, wl_spec, spec, wl_sens, sens, $
     p1 = plot(pos_cen_data_pix, pos_cen_data_wave, symbol = 'x', current = win, $
       font_size = 16, name = 'data', xtitle = 'pixel', ytitle = 'wavelength (nm)', $
       layout = [1, 2, 1])
-    p2 = plot(pos_cen_data_pix, pos_cen_ref_wave, symbol = 'o', /over, color = 'red', name = 'reference')
-    leg = legend(target = [p1, p2], font_size = 14)
+    p2 = plot(pos_cen_data_pix, pos_cen_ref_wave, font_size = 14, symbol = 'o', /over, color = 'red', name = 'reference')
+    leg = legend(target = [p1, p2])
     ;
     p3 = plot(pos_cen_data_pix, pos_cen_data_wave - pos_cen_ref_wave, symbol = 'o', $
       current = win, layout = [1, 2, 2], xtitle = 'pixel', ytitle = 'wavelength (nm)', $
