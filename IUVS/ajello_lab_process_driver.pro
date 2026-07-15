@@ -108,7 +108,10 @@ pro ajello_lab_process_driver
   ; path_data_list = ['N2/16eV/test28_image2/']
   ; path_data_list = ['N2/16eV/test29_image3/', 'N2/20eV/test30_image3/']
   ; path_data_list = ['N2/20eV/test31_image1/', 'N2/20eV/test32_image2/', 'N2/14eV/test33_image1/']
-  path_data_list = ['N2/14eV/test34_image2/']
+  ; path_data_list = ['N2/14eV/test34_image2/']
+  ; path_data_list = ['N2/14eV/test35_image3/', 'N2/11eV/test36_image1/']
+  ; path_data_list = ['N2/18eV/test37_image3/']
+  path_data_list = ['N2/18eV/test38_image1/', 'N2/18eV/test39_image2/']
 
   ; <end>
 
