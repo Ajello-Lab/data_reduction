@@ -1,6 +1,6 @@
 ;+
 ; PURPOSE
-;
+;   Akin to ajello_lab_n2_model_fit with more comprehensive visualization output
 ;
 ; INPUTS
 ;
@@ -111,7 +111,7 @@ pro ajello_lab_FCF_regression
       stop
     endif
 
-    file_name = file_basename(file_data, '.idl') + '_Calibrated'
+    file_name = file_basename(file_data, '.idl') + '_FCF'
     print, 'Processing: ' + file_data
 
     sObj = obj_new('IDL_Savefile', file_data)
@@ -230,7 +230,9 @@ pro ajello_lab_FCF_regression
       title = 'FCF', font_size = 12, font_name = 'times', yr = [0, 0.25], position = [0.71, 0.06, 0.97, 0.48])
     p2 = plot(fcf_deriv, /over, color = 'red', symbol = 'o', /sym_filled, sym_color = 'red', name = 'derived')
     leg = legend(target = [p1, p2], position = [0.8, 0.65], font_name = 'times', font_size = 8, sample_width = 0.1, font_style = 'bold')
-    ; win.save, path_save + file_name + '.png'
+    win.save, path_save + file_name + '.png'
+
+    save, filename = path_save + file_name + '.idl', fcf_model, fcf_deriv, model_fit_arr_
 
     stop
   endfor
