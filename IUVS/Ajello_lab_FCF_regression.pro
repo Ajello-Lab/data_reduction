@@ -101,6 +101,8 @@ pro ajello_lab_FCF_regression
   ; Regression Analysis
   ; ------------------------
 
+  ajello_lab_pixel_scale_rot, wlfuv, wlmuv, yfuv, ymuv
+
   for i = 0, n_elements(file_names) - 1 do begin
     file_data = file_names[i]
 
@@ -113,7 +115,7 @@ pro ajello_lab_FCF_regression
     print, 'Processing: ' + file_data
 
     sObj = obj_new('IDL_Savefile', file_data)
-    sObj.restore, ['spec_cal', 'wave_spec', 'wlfuv']
+    sObj.restore, ['spec_cal', 'wave_spec']
     obj_destroy, sObj
 
     w1_norm = 128.5
@@ -153,43 +155,45 @@ pro ajello_lab_FCF_regression
     y = spec_cal_norm[ndx_wave_fit]
     weights = 1. / y
     ; r3 = reform(r) > 0.
-    param3 = fltarr(num_feat)
-    param3[*] = 1.
+    param = fltarr(num_feat)
+    param[*] = 1.
     ; xtol = 1D-10 ; default
     ; xtol = 4D-10
     parinfo = replicate({value: 0.d, fixed: 0, limited: [0, 0], limits: [0.d, 0]}, $
       num_feat)
     parinfo.limited[0] = 1 ; require all parameters to require specified lower bound
     parinfo.limits[0] = 0. ; set lower bound for all parameters to zero (i.e. positive)
-    yfit3 = mpcurvefit(x, y, weights, param3, /noderivative, parinfo = parinfo, $
+    yfit = mpcurvefit(x, y, weights, param, /noderivative, parinfo = parinfo, $
       function_name = 'mlr_no_intercept', status = status, $ ; , xtol=xtol
       errmsg = errmsg, /quiet)
 
     model_fit_arr = fltarr(num_wave_spec, num_feat)
     for i = 0, num_feat - 1 do $
-      model_fit_arr[*, i] = modeli[*, i] * param3[i]
+      model_fit_arr[*, i] = modeli[*, i] * param[i]
 
     spec_fit = total(model_fit_arr, 2)
 
     yr_ndx = where(wave_spec gt wl1_fit and wave_spec lt wl2_fit)
     yr = [0, max(spec_cal_norm[yr_ndx]) * 1.1]
+    lbh_tot = total(model_fit_arr[*, 0 : 6], 2)
+    yr1 = [0, max(lbh_tot[yr_ndx]) * 1.3]
 
-    win = window(dim = [1200, 800])
+    win = window(dim = [1900, 800])
     thick = 2
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = yr, position = [0.05, 0.53, 0.65, 0.95], title = file_name, $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = yr, position = [0.03, 0.53, 0.42, 0.95], title = file_name, $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
     ; p2 = plot( wave_spec_fit, yfit3, color='red', /over )
     p3 = plot(wave_spec, spec_fit, color = 'red', /over)
     markerp, p1, x = wl1_fit, linestyle = 2
     markerp, p1, x = wl2_fit, linestyle = 2
 
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], yr = yr, position = [0.7, 0.53, 0.97, 0.95], $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], yr = yr1, position = [0.46, 0.53, 0.68, 0.95], $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
     ; p2 = plot( wave_spec_fit, yfit3, color='red', /over )
     p3 = plot(wave_spec, spec_fit, color = 'red', /over)
 
     thick = 2
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = yr, position = [0.05, 0.05, 0.65, 0.47], $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = yr, position = [0.02, 0.06, 0.42, 0.48], $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', name = 'Data', font_name = 'times', font_size = 12)
     p2 = plot(wave_spec, model_fit_arr[*, 0], /over, color = 'red', thick = thick, name = 'LBH0')
     p3 = plot(wave_spec, model_fit_arr[*, 1], /over, color = 'orange', thick = thick, name = 'LBH1')
@@ -200,12 +204,12 @@ pro ajello_lab_FCF_regression
     p8 = plot(wave_spec, model_fit_arr[*, 6], /over, color = 'violet', thick = thick, name = 'LBH6')
     for i = 0, num_atomic - 1 do $
       pi = plot(wave_spec, model_fit_arr[*, 7 + i], /over, color = 'gray', thick = thick, name = 'N1 Spectra')
-    leg = legend(target = [p1, p2, p3, p4, p5, p6, p7, p8, pi], sample_width = 0.08, position = [1, 1], /relative, $
+    leg = legend(target = [p1, p2, p3, p4, p5, p6, p7, p8, pi], sample_width = 0.08, position = [0.8, 0.95], $
       vertical_spacing = 0.01, font_size = 8, font_name = 'times', linestyle = 6, horizontal_spacing = 0.01, font_style = 'bold')
     markerp, p1, x = wl1_fit, linestyle = 2
     markerp, p1, x = wl2_fit, linestyle = 2
 
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], yr = yr, position = [0.7, 0.05, 0.97, 0.47], $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], yr = yr1, position = [0.46, 0.06, 0.68, 0.48], $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
     p2 = plot(wave_spec, model_fit_arr[*, 0], /over, color = 'red', thick = thick)
     p3 = plot(wave_spec, model_fit_arr[*, 1], /over, color = 'orange', thick = thick)
@@ -216,7 +220,18 @@ pro ajello_lab_FCF_regression
     p8 = plot(wave_spec, model_fit_arr[*, 6], /over, color = 'violet', thick = thick)
     for i = 0, num_atomic - 1 do $
       pi = plot(wave_spec, model_fit_arr[*, 7 + i], /over, color = 'gray', thick = thick)
+
+    fcf_model = total(model[*, 0 : num_band_lbh - 1], 1)
+    fcf_model /= total(fcf_model)
+    fcf_deriv = fcf_model * param[0 : num_band_lbh - 1]
+    fcf_deriv /= total(fcf_deriv)
+
+    p1 = plot(fcf_model, current = win, symbol = 'o', /sym_filled, name = 'model', $
+      title = 'FCF', font_size = 12, font_name = 'times', yr = [0, 0.25], position = [0.71, 0.06, 0.97, 0.48])
+    p2 = plot(fcf_deriv, /over, color = 'red', symbol = 'o', /sym_filled, sym_color = 'red', name = 'derived')
+    leg = legend(target = [p1, p2], position = [0.8, 0.65], font_name = 'times', font_size = 8, sample_width = 0.1, font_style = 'bold')
     ; win.save, path_save + file_name + '.png'
+
     stop
   endfor
   stop

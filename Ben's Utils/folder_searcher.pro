@@ -17,8 +17,8 @@ pro folder_searcher, folder_path, file_type, keyword_1, files, $
   keyword_3 = keyword_3
   compile_opt idl2
 
-  ; if not keyword_set(keyword_2) then keyword_2 = keyword_1
-  ; if not keyword_set(keyword_3) then keyword_3 = keyword_1
+  if not keyword_set(keyword_2) then keyword_2 = keyword_1
+  if not keyword_set(keyword_3) then keyword_3 = keyword_1
 
   if not file_test(folder_path) then begin
     print, 'Error: Folder Not Found'

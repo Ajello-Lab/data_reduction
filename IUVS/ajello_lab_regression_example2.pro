@@ -170,7 +170,7 @@ pro ajello_lab_regression_example2
   for i = 0, num_images - 1 do $
     spec[i, *] *= norm_factor
 
-  spec_cal_norm = total(spec_cal, 1)
+  spec_cal_norm = total(spec, 1)
 
   spec_cal_norm >= 0.
   ndx_out = where(wave_spec lt 115., count)
