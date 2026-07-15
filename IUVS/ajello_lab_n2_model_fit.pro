@@ -1,12 +1,24 @@
 ;+
 ; PURPOSE
-;  
+;  This routine will fit an LBH model vprime component spectra to 
+;   a measured IUVS N2 spectrum.
 ;
 ; INPUTS
-;
+;  wave_spec: [NW] corrected wavelength scale, nm
+;  spec: [NW] observed and calibrated N2 spectrum 
+;  
 ; OUTPUTS
-;
+;  param_fit : [NP] Fit parameters 
+;  param_id : [NP] identification of each parameter 
+;  fcf_fit : [NP] Derived Franck-Condon factors
+;  model_fit_arr : [NW,NP] array of model spectra fits 
+;  spec_fit : [NW] final spectral fit to the data
+;  
 ; KEYWORDS
+;  wl1_fit: (optional) lower bound of wavelength range to consider in fit, nm
+;    Default: 126.5 nm
+;  wl2_fit: (optional) upper bound of wavelength range to consider in fit, nm
+;    Default: 155.0 nm
 ;-
 
 pro mlr_no_intercept, X, A, F
@@ -17,12 +29,20 @@ pro mlr_no_intercept, X, A, F
 END
 
 pro ajello_lab_n2_model_fit, wave_spec, spec, $
-  wl1_fit=wl1_fit, wl2_fit=wl2_fit
+  param_fit, $
+  param_id, $
+  fcf_fit, $
+  model_fit_arr, $
+  spec_fit, $
+  wl1_fit=wl1_fit, $
+  wl2_fit=wl2_fit, $
+  show_plots=show_plots
 
   if keyword_set(wl1_fit) eq 0 then wl1_fit = 126.5
   if keyword_set(wl2_fit) eq 0 then wl2_fit = 155.0
 
   if n_params() eq 0 then begin
+    show_plots = 1
     
     ajello_lab_set_paths, path_base, path_repo
   
@@ -31,13 +51,11 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
         ;file_data_helper = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Round_12/data_reduction/'
         path_save = '/users/holsclaw/Documents/'
         file_data = '/Volumes/projects/Phase_Development/MAVEN/IUVS_Data/IUVS_Breadboard/Ajello_Round14/Data_Reduction/N2_30EV_FUV_TEST19_IMAGE1.idl'
-        file_model = path_repo + 'data/N2/n2_lbh_rot_293K.sav'
       end
       'benjamincondit': begin
         ;file_data_helper = '/Users/benjamincondit/Desktop/IUVS_Breadboard/Round 12/data_reduction/'
         path_save = '/Users/benjamincondit/idl/data_reduction/IUVS/Sensitivities/'
         file_data = ''
-        file_model = ''
       end
     endcase
   
@@ -68,13 +86,13 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     y1 = ( ndx_spat_peak - yw ) > y1_key
     y2 = ( ndx_spat_peak + yw ) < y2_key
     
-    p = plot( spat )
-    markerp,p,x=y1,linestyle=2
-    markerp,p,x=y2,linestyle=2
+;    p = plot( spat )
+;    markerp,p,x=y1,linestyle=2
+;    markerp,p,x=y2,linestyle=2
   
     spec = total( arr[*,y1:y2], 2, /nan )  ; for rotated image  
     
-    p1 = plot( spec, xtitle='pixel' )
+;    p1 = plot( spec, xtitle='pixel' )
   
     ndx_spec_peak = findndx( spec, max(spec) )
     
@@ -88,29 +106,31 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     ;
     wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 120.0
     
-    p1 = plot( wave_spec, spec, xtitle='wavelength scale corrected (nm)' )
-    markerp,p1,x=120.0,linestyle=2
+;    p1 = plot( wave_spec, spec, xtitle='wavelength scale corrected (nm)' )
+;    markerp,p1,x=120.0,linestyle=2
     
+    ;
+    ; retrieve sensitivity
+    ;
+    ajello_lab_sensitivity_fuv_2026_07, wave_spec, sens
+
+    ;
+    ; calibrate the data
+    ;
+    spec_cal = spec / sens
+
     stop
     
   endif
   
-  ; 
-  ; retrieve sensitivity
-  ;
-  ajello_lab_sensitivity_fuv_2026_07, wave_spec, sens
-
-  ;
-  ; calibrate the data
-  ;
-  spec_cal = spec / sens
-  
   ;
   ; normalize the calibrated data as a plotting convenience 
   ;
-  ndx_spec_norm = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
+  ;ndx_spec_norm = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
   ;ndx_lbh_norm = where( wave_lbh gt wl1_fit and wave_lbh lt wl2_fit )
-  spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) ;/ mean(deriv(wlfuv))
+  ;spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) ;/ mean(deriv(wlfuv))
+  spec_cal_norm = spec_cal
+  
 ;  
 ;  ;
 ;  ; force the observed data to be positive
@@ -145,27 +165,29 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
   ;
   scaled_iuvs_psf_model, wave_lbh[0:301], psf
   
-  ;
-  ; Show each vprime component
-  ;
-  win = window(dim=[1200,800])
-  wave_first = [ 145.1, 141.7, 138.4, 135.5, 132.6, 130.0, 127.4 ]
-  norm1 = fltarr(num_band_lbh)
-  normw = 2.
-  xr = [min(wave_lbh),max(wave_lbh)]
-  for i = 0, num_band_lbh - 1 do begin
-    v1 = lbh[*,i] / total(lbh[*,i]) ;/wave_lbh_step
-    p1i = plot( wave_lbh, v1, layout=[1,num_band_lbh,i+1], current=win, /ylog, xr=xr )
-  
-    w1 = wave_first[i] - normw
-    w2 = wave_first[i] + normw
-    ndx1 = where( $
-      ( wave_lbh gt w1 ) and $
-      ( wave_lbh lt w2 ), count1 )
-    norm1[i] = total( v1[ndx1] ) / total( v1 )
-    ;ps = plot_shade( p1i, w1, w2, fill_transparency=70, fill_color='blue'  )
-  endfor
-  ;win.save, path_save + 'ajello_lab_n2_models_plot_each_vprime.png'
+  if keyword_set(show_plots) then begin
+    ;
+    ; Show each vprime component
+    ;
+    win = window(dim=[1200,800])
+    wave_first = [ 145.1, 141.7, 138.4, 135.5, 132.6, 130.0, 127.4 ]
+    norm1 = fltarr(num_band_lbh)
+    normw = 2.
+    xr = [min(wave_lbh),max(wave_lbh)]
+    for i = 0, num_band_lbh - 1 do begin
+      v1 = lbh[*,i] / total(lbh[*,i]) ;/wave_lbh_step
+      p1i = plot( wave_lbh, v1, layout=[1,num_band_lbh,i+1], current=win, /ylog, xr=xr )
+    
+      w1 = wave_first[i] - normw
+      w2 = wave_first[i] + normw
+      ndx1 = where( $
+        ( wave_lbh gt w1 ) and $
+        ( wave_lbh lt w2 ), count1 )
+      norm1[i] = total( v1[ndx1] ) / total( v1 )
+      ;ps = plot_shade( p1i, w1, w2, fill_transparency=70, fill_color='blue'  )
+    endfor
+    ;win.save, path_save + 'ajello_lab_n2_models_plot_each_vprime.png'
+  endif
   
   ;    win = window(dim=[800,600])
   ;    p1 = plot( total( lbh, 1 ) / total( lbh ), current=win, font_size=14, $
@@ -223,7 +245,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     modeli[*,i] = interpol( model[*,i], wave_model, wave_spec )
     
   ;
-  ; limit the regression to only the range available in the model 
+  ; limit the regression to the given wavelength range
   ;
   ndx_wave_fit = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
   wave_spec_fit = wave_spec[ndx_wave_fit]
@@ -249,76 +271,78 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
   ; MPCURVEFIT docs: WEIGHTS: "1D/Y     - Poisson weighting (counting statistics)"
   weights = 1./y
   ;r3 = reform(r) > 0.
-  param3 = fltarr(num_feat)
-  param3[*] = 1.
+  param = fltarr(num_feat)
+  param[*] = 1.
   ;xtol = 1D-10 ; default
   ;xtol = 4D-10
   parinfo = replicate({value:0.D, fixed:0, limited:[0,0], limits:[0.D,0]}, $
     num_feat)
   parinfo.limited[0] = 1  ; require all parameters to require specified lower bound
   parinfo.limits[0] = 0.  ; set lower bound for all parameters to zero (i.e. positive)
-  yfit3 = MPCURVEFIT( X, Y, WEIGHTS, param3, /NODERIVATIVE, parinfo=parinfo, $
+  yfit = MPCURVEFIT( X, Y, WEIGHTS, param, /NODERIVATIVE, parinfo=parinfo, $
     FUNCTION_NAME='mlr_no_intercept', status=status, $  ; , xtol=xtol
     ERRMSG=errmsg )
-      
-  model_fit_arr3 = fltarr( num_wave_spec, num_feat )
+
+  param_fit = param
+  param_id = [ 'vp0', 'vp1', 'vp2', 'vp3', 'vp4', 'vp5', 'vp6', $
+    string( arr_nist.wave_obs, format='(F6.2)' ) ]
+  
+  model_fit_arr = fltarr( num_wave_spec, num_feat )
   for i = 0, num_feat - 1 do $
-    model_fit_arr3[*,i] = modeli[*,i] * param3[i]
+    model_fit_arr[*,i] = modeli[*,i] * param_fit[i]
     
-  spec_fit3 = total( model_fit_arr3, 2 )
+  spec_fit = total( model_fit_arr, 2 )
 
-
-  win = window(dim=[1200,800])
-  thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='mpcurvefit' )
-  ;p2 = plot( wave_spec_fit, yfit3, color='red', /over )
-  p3 = plot( wave_spec, spec_fit3, color='red', /over )
-  markerp,p1,x=wl1_fit,linestyle=2
-  markerp,p1,x=wl2_fit,linestyle=2
-  ;
-  ;win = window(dim=[1200,600])
-  thick = 2
-  p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
-  p2 = plot( wave_spec, model_fit_arr3[*,0], /over, color='red', thick=thick )
-  p3 = plot( wave_spec, model_fit_arr3[*,1], /over, color='orange', thick=thick )
-  p4 = plot( wave_spec, model_fit_arr3[*,2], /over, color='yellow', thick=thick )
-  p5 = plot( wave_spec, model_fit_arr3[*,3], /over, color='green', thick=thick )
-  p6 = plot( wave_spec, model_fit_arr3[*,4], /over, color='blue', thick=thick )
-  p7 = plot( wave_spec, model_fit_arr3[*,5], /over, color='indigo', thick=thick )
-  p8 = plot( wave_spec, model_fit_arr3[*,6], /over, color='violet', thick=thick )
-  for i = 0, num_atomic - 1 do $
-    pi = plot( wave_spec, model_fit_arr3[*,7+i], /over, color='red', thick=thick )
-  markerp,p1,x=wl1_fit,linestyle=2
-  markerp,p1,x=wl2_fit,linestyle=2
-  ;win.save, path_save + 'ajello_lab_mpcurvefit.png'
-  
-  
-  win = window(dim=[1200,800])
-  ;p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185] )
-  xr=[110,185]
-  p2 = plot( wave_spec, model_fit_arr3[*,0], current=win, color='red', thick=thick, xr=xr, layout=[1,7,1], title='0' )
-  p3 = plot( wave_spec, model_fit_arr3[*,1], current=win, color='orange', thick=thick, xr=xr, layout=[1,7,2], title='1' )
-  p4 = plot( wave_spec, model_fit_arr3[*,2], current=win, color='yellow', thick=thick, xr=xr, layout=[1,7,3], title='2' )
-  p5 = plot( wave_spec, model_fit_arr3[*,3], current=win, color='green', thick=thick, xr=xr, layout=[1,7,4], title='3' )
-  p6 = plot( wave_spec, model_fit_arr3[*,4], current=win, color='blue', thick=thick, xr=xr, layout=[1,7,5], title='4' )
-  p7 = plot( wave_spec, model_fit_arr3[*,5], current=win, color='indigo', thick=thick, xr=xr, layout=[1,7,6], title='5' )
-  p8 = plot( wave_spec, model_fit_arr3[*,6], current=win, color='violet', thick=thick, xr=xr, layout=[1,7,7], title='6' )
-
-  
-  
-  fcf_model = total( model[*,0:num_band_lbh-1], 1 )
+  fcf_model = total( model[*, 0:num_band_lbh-1], 1 )
   fcf_model /= total(fcf_model)
-  fcf_deriv = fcf_model * param3[0:num_band_lbh-1]
-  fcf_deriv /= total(fcf_deriv)
-  
-  win = window(dim=[800,600])
-  yr = [ 0, 0.25 ]
-  p1 = plot( fcf_model, current=win, symbol='o', /sym_filled, name='model', title='FCF', font_size=14, yr=yr )  ; yr=yr,
-  p2 = plot( fcf_deriv, /over, color='red', symbol='o', /sym_filled, sym_color='red', name='derived' )
-  leg = legend(target=[p1,p2]) ; ,position=[0.9,0.4]
+  fcf_fit = fcf_model * param_fit[0:num_band_lbh-1]
+  fcf_fit /= total(fcf_fit)
 
-  
-  
-stop
+  if keyword_set(show_plots) then begin
+    win = window(dim=[1200,800])
+    thick = 2
+    p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,1], title='mpcurvefit' )
+    ;p2 = plot( wave_spec_fit, yfit3, color='red', /over )
+    p3 = plot( wave_spec, spec_fit, color='red', /over )
+    markerp,p1,x=wl1_fit,linestyle=2
+    markerp,p1,x=wl2_fit,linestyle=2
+    ;
+    ;win = window(dim=[1200,600])
+    thick = 2
+    p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185], layout=[1,2,2] )
+    p2 = plot( wave_spec, model_fit_arr[*,0], /over, color='red', thick=thick )
+    p3 = plot( wave_spec, model_fit_arr[*,1], /over, color='orange', thick=thick )
+    p4 = plot( wave_spec, model_fit_arr[*,2], /over, color='yellow', thick=thick )
+    p5 = plot( wave_spec, model_fit_arr[*,3], /over, color='green', thick=thick )
+    p6 = plot( wave_spec, model_fit_arr[*,4], /over, color='blue', thick=thick )
+    p7 = plot( wave_spec, model_fit_arr[*,5], /over, color='indigo', thick=thick )
+    p8 = plot( wave_spec, model_fit_arr[*,6], /over, color='violet', thick=thick )
+    for i = 0, num_atomic - 1 do $
+      pi = plot( wave_spec, model_fit_arr[*,7+i], /over, color='red', thick=thick )
+    markerp,p1,x=wl1_fit,linestyle=2
+    markerp,p1,x=wl2_fit,linestyle=2
+    ;win.save, path_save + 'ajello_lab_mpcurvefit.png'
+    
+    
+    win = window(dim=[1200,800])
+    ;p1 = plot( wave_spec, spec_cal_norm, current=win, thick=thick, xr=[110,185] )
+    xr=[110,185]
+    p2 = plot( wave_spec, model_fit_arr[*,0], current=win, color='red', thick=thick, xr=xr, layout=[1,7,1], title='0' )
+    p3 = plot( wave_spec, model_fit_arr[*,1], current=win, color='orange', thick=thick, xr=xr, layout=[1,7,2], title='1' )
+    p4 = plot( wave_spec, model_fit_arr[*,2], current=win, color='yellow', thick=thick, xr=xr, layout=[1,7,3], title='2' )
+    p5 = plot( wave_spec, model_fit_arr[*,3], current=win, color='green', thick=thick, xr=xr, layout=[1,7,4], title='3' )
+    p6 = plot( wave_spec, model_fit_arr[*,4], current=win, color='blue', thick=thick, xr=xr, layout=[1,7,5], title='4' )
+    p7 = plot( wave_spec, model_fit_arr[*,5], current=win, color='indigo', thick=thick, xr=xr, layout=[1,7,6], title='5' )
+    p8 = plot( wave_spec, model_fit_arr[*,6], current=win, color='violet', thick=thick, xr=xr, layout=[1,7,7], title='6' )
 
+    win = window(dim=[800,600])
+    yr = [ 0, 0.25 ]
+    p1 = plot( fcf_model, current=win, symbol='o', /sym_filled, name='model', title='FCF', font_size=14, yr=yr )  ; yr=yr,
+    p2 = plot( fcf_fit, /over, color='red', symbol='o', /sym_filled, sym_color='red', name='derived' )
+    leg = legend(target=[p1,p2]) ; ,position=[0.9,0.4]
+
+  endif
+
+  if n_params() eq 0 then stop
+  
 end
