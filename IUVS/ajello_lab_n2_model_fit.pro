@@ -45,132 +45,6 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       print, 'data file not found or not defined'
       stop
     endif
-  
-    if file_test(file_data) eq 0 then begin
-      print, 'model file not found or not defined'
-      stop
-    endif
-    
-    ;
-    ; retrieve LBH model
-    ;
-    wave1_lbh = 100.
-    wave2_lbh = 450.
-    waved_lbh = 0.04
-    wave_lbh = findgen( (wave2_lbh - wave1_lbh) / waved_lbh ) * waved_lbh + wave1_lbh
-    lbh_temp = 300.  ; Kelvin
-    lbh = slbh2( lbh_temp, wave_lbh*10. ) 
-    wave_lbh_step = mean( deriv( wave_lbh ) )
-    num_wave_lbh = n_elements(wave_lbh)
-    
-    sz = size(lbh,/dim)
-    num_wave_lbh = sz[0]
-    num_band_lbh = sz[1]
-    
-    ;
-    ; create a PSF for LBH model
-    ;
-    scaled_iuvs_psf_model, wave_lbh[0:301], psf
-    
-;    wave_first = [ 145.1, 141.7, 138.4, 135.5, 132.6, 130.0, 127.4 ] 
-;    num_vp = 7
-;    norm1 = fltarr(num_vp)
-;    norm2 = fltarr(num_vp)
-;    norm3 = fltarr(num_vp)
-;    norm4 = fltarr(num_vp)
-;    normw = 2.
-    
-    ; 
-    ; Show each vprime component
-    ;
-    win = window(dim=[1200,800])
-    ;xr = [min(wave_lbh2),max(wave_lbh2)]
-    xr = [min(wave_lbh),max(wave_lbh)]
-    for i = 0, num_band_lbh - 1 do begin
-      v1 = lbh[*,i] / total(lbh[*,i]) ;/wave_lbh_step
-      p1i = plot( wave_lbh, v1, layout=[1,num_band_lbh,i+1], current=win, /ylog, xr=xr )
-    
-;      w1 = wave_first[i] - normw
-;      w2 = wave_first[i] + normw
-;      
-;      ndx1 = where( $
-;        ( wave_lbh gt w1 ) and $ 
-;        ( wave_lbh lt w2 ), count1 )
-;        
-;      ndx2 = where( $
-;        ( wave_lbh2 gt w1 ) and $
-;        ( wave_lbh2 lt w2 ), count2 )
-;           
-;      norm1[i] = total( v1[ndx1] ) / total( v1 )
-;      norm2[i] = total( v2[ndx2] ) / total( v2 )
-
-;      norm3[i] = total( v1[ndx1] ) 
-;      norm4[i] = total( v2[ndx2] ) 
-      
-      ;ps = plot_shade( p1i, w1, w2, fill_transparency=70, fill_color='blue'  )
-
-    endfor
-    ;win.save, path_save + 'ajello_lab_n2_models_plot_each_vprime.png'
-  
-;    desc1 = file_basename(file_model)
-;    desc2 = 'slbh2'
-    
-;    win = window(dim=[800,600])
-;    p1 = plot( norm1, name=desc1, current=win, font_size=14, yr=[0,0.5], symbol='o', /sym_filled, title="ratio v''0 to sum v''", xtitle="v'" )
-;    p2 = plot( norm2, /over, color='red', name=desc2, symbol='s', /sym_filled, sym_color='red' )
-;    leg = legend(target=[p1,p2], position=[0.8,0.4])
-;    ;win.save, path_save + 'ajello_lab_n2_models_ratio_vdoubleprime0_to_sum_vdoubleprime.png'
-    
-    win = window(dim=[800,600])  
-    p1 = plot( total( lbh, 1 ) / total( lbh ), current=win, font_size=14, yr=[0,0.25], symbol='o', /sym_filled, title="ratio sum across v'' to sum", xtitle="v'" )
-    ;leg = legend(target=[p1], position=[0.8,0.4])
-    ;win.save, path_save + 'ajello_lab_n2_models_ratio_sum_vdoubleprime_to_sum.png'
-
-    ;    p1 = plot( norm3 )
-    ;    p2 = plot( norm4, /over, color='red' )
-    
-  ;stop
-  
-    ;
-    ; retrieve atomic nitrogen emissions and filter
-    ; 
-    ajello_lab_nitrogen_emission_nist, arr_nist
-    n = where( (arr_nist.ion eq 1) and $
-               (arr_nist.rel_int gt 0.) and $
-               (arr_nist.wave_obs ge wl1_fit) and $
-               (arr_nist.wave_obs le wl2_fit), num_atomic )
-    arr_nist = arr_nist[n]
-    
-    ;
-    ; Include atomic emissions
-    ;
-    
-    model = fltarr( num_wave_lbh, num_band_lbh + num_atomic )
-    model[*, 0:num_band_lbh-1] = lbh
-
-    ;
-    ; introduce a delta function at the atomic emission wavelength
-    ;  scale the magnitude to place it on a similar scale as the LBH emissions,
-    ;  but preserve the relative intensity 
-    ;
-    for i = 0, num_atomic - 1 do begin
-      n = findndx( wave_lbh, arr_nist[i].wave_obs )
-      model[ n, num_band_lbh + i ] = arr_nist[i].rel_int / max(arr_nist.rel_int) * max(lbh)     
-    endfor
-    
-    ;
-    ; total number of feature components is the sum of the number of LBH 
-    ;  vibration bands and atomic emissions
-    ;
-    num_feat = num_band_lbh + num_atomic
-    
-    ;
-    ; convolve each component by the PSF
-    ;
-    model_sm = model
-    for i = 0, num_feat - 1 do $ 
-      model_sm[*, i] = convol( model[*, i], psf ) / total(psf) / wave_lbh_step
-    
     
     ; LOAD IN DATA ***********************
     ;restore, file_data, /verbose  
@@ -217,9 +91,6 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     p1 = plot( wave_spec, spec, xtitle='wavelength scale corrected (nm)' )
     markerp,p1,x=120.0,linestyle=2
     
-    model = model_sm
-    wave_model = wave_lbh
-    
     stop
     
   endif
@@ -238,7 +109,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
   ; normalize the calibrated data as a plotting convenience 
   ;
   ndx_spec_norm = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
-  ndx_lbh_norm = where( wave_lbh gt wl1_fit and wave_lbh lt wl2_fit )
+  ;ndx_lbh_norm = where( wave_lbh gt wl1_fit and wave_lbh lt wl2_fit )
   spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) ;/ mean(deriv(wlfuv))
 ;  
 ;  ;
@@ -252,6 +123,96 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
 ;  spec_cal_norm[ndx_out] = 0.
 ;  
 ;  yr = [0, max( spec_cal_norm[ndx_spec_norm] )*1.1 ]
+  
+  ;
+  ; retrieve LBH model
+  ;
+  wave1_lbh = 100.
+  wave2_lbh = 450.
+  waved_lbh = 0.04
+  wave_lbh = findgen( (wave2_lbh - wave1_lbh) / waved_lbh ) * waved_lbh + wave1_lbh
+  lbh_temp = 300.  ; Kelvin
+  lbh = slbh2( lbh_temp, wave_lbh*10. )
+  wave_lbh_step = mean( deriv( wave_lbh ) )
+  num_wave_lbh = n_elements(wave_lbh)
+  
+  sz = size(lbh,/dim)
+  num_wave_lbh = sz[0]
+  num_band_lbh = sz[1]
+  
+  ;
+  ; create a PSF for LBH model
+  ;
+  scaled_iuvs_psf_model, wave_lbh[0:301], psf
+  
+  ;
+  ; Show each vprime component
+  ;
+  win = window(dim=[1200,800])
+  wave_first = [ 145.1, 141.7, 138.4, 135.5, 132.6, 130.0, 127.4 ]
+  norm1 = fltarr(num_band_lbh)
+  normw = 2.
+  xr = [min(wave_lbh),max(wave_lbh)]
+  for i = 0, num_band_lbh - 1 do begin
+    v1 = lbh[*,i] / total(lbh[*,i]) ;/wave_lbh_step
+    p1i = plot( wave_lbh, v1, layout=[1,num_band_lbh,i+1], current=win, /ylog, xr=xr )
+  
+    w1 = wave_first[i] - normw
+    w2 = wave_first[i] + normw
+    ndx1 = where( $
+      ( wave_lbh gt w1 ) and $
+      ( wave_lbh lt w2 ), count1 )
+    norm1[i] = total( v1[ndx1] ) / total( v1 )
+    ;ps = plot_shade( p1i, w1, w2, fill_transparency=70, fill_color='blue'  )
+  endfor
+  ;win.save, path_save + 'ajello_lab_n2_models_plot_each_vprime.png'
+  
+  ;    win = window(dim=[800,600])
+  ;    p1 = plot( total( lbh, 1 ) / total( lbh ), current=win, font_size=14, $
+  ;      yr=[0,0.25], symbol='o', /sym_filled, $
+  ;      title="ratio sum across v'' to sum", xtitle="v'" )
+  
+  ;
+  ; retrieve atomic nitrogen emissions and filter
+  ;
+  ajello_lab_nitrogen_emission_nist, arr_nist
+  n = where( (arr_nist.ion eq 1) and $
+    (arr_nist.rel_int gt 0.) and $
+    (arr_nist.wave_obs ge wl1_fit) and $
+    (arr_nist.wave_obs le wl2_fit), num_atomic )
+  arr_nist = arr_nist[n]
+  
+  ;
+  ; Include atomic emissions
+  ;
+  model = fltarr( num_wave_lbh, num_band_lbh + num_atomic )
+  model[*, 0:num_band_lbh-1] = lbh
+  
+  ;
+  ; introduce a delta function at the atomic emission wavelength
+  ;  scale the magnitude to place it on a similar scale as the LBH emissions,
+  ;  but preserve the relative intensity
+  ;
+  for i = 0, num_atomic - 1 do begin
+    n = findndx( wave_lbh, arr_nist[i].wave_obs )
+    model[ n, num_band_lbh + i ] = arr_nist[i].rel_int / max(arr_nist.rel_int) * max(lbh)
+  endfor
+  
+  ;
+  ; total number of feature components is the sum of the number of LBH
+  ;  vibration bands and atomic emissions
+  ;
+  num_feat = num_band_lbh + num_atomic
+  
+  ;
+  ; convolve each component by the PSF
+  ;
+  model_sm = model
+  for i = 0, num_feat - 1 do $
+    model_sm[*, i] = convol( model[*, i], psf ) / total(psf) / wave_lbh_step
+
+  model = model_sm
+  wave_model = wave_lbh
   
   ;
   ; interpolate the model to the wavelength scale of the data
