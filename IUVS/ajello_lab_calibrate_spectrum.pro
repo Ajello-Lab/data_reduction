@@ -5,6 +5,7 @@
 ;
 ; INPUTS
 ; arr: [NW, NW] input data array
+; image_type: what kind of image the arr is from (image 1, 2, or 3)
 ;
 ; OUTPUTS
 ; wave_spec: [NW] corrected wavelength scale, nm
@@ -14,11 +15,11 @@
 ;
 ; NOTES
 ; [NW] = number of wavelengths
-;
-pro ajello_lab_calibrate_spectrum, arr, $
+; -
+pro ajello_lab_calibrate_spectrum, arr, image_type, $
   wave_spec, $
   spec_cal, $
-  show_plots = show_plots
+  show_plots = show_plots, $
   save_data = save_data
   compile_opt idl2
 
@@ -60,6 +61,9 @@ pro ajello_lab_calibrate_spectrum, arr, $
     sObj = obj_new('IDL_Savefile', file_data)
     sObj.restore, 'arr'
     obj_destroy, sObj
+
+    if file_name.contains('IMAGE1') then image_type = 1 $
+    else image_type = 2
   endif
 
   spat = total(arr, 1, /nan)
@@ -70,15 +74,15 @@ pro ajello_lab_calibrate_spectrum, arr, $
   y1_key = 130 ; outside key hole
   y2_key = 940
 
-  if file_name.contains('IMAGE1') then begin
+  if image_type eq 1 then begin
     ndx_spat_peak = findndx(spat, max(spat))
     yw = 100
     y1 = (ndx_spat_peak - yw) > y1_key
     y2 = (ndx_spat_peak + yw) < y2_key
-  endif else if file_name.contains('IMAGE2') or file_name.contains('IMAGE3') then begin
+  endif else begin
     y1 = y1_key
     y2 = y2_key
-  endif
+  endelse
 
   spec = total(arr[*, y1 : y2], 2, /nan) ; for rotated image
 
@@ -112,9 +116,15 @@ pro ajello_lab_calibrate_spectrum, arr, $
   spec_cal = spec_significant / sens
 
   if keyword_set(show_plots) then begin
+    if keyword_set(save_data) then $
+      file_name = file_basename(save_data, '.idl') + '_Calibrated' else file_name = ''
+
     ndx_imporant = where(wave_spec lt 160 and wave_spec gt 115)
     yr = [1.05 * min(spec_cal[ndx_imporant]), 1.05 * max(spec_cal[ndx_imporant])]
+
     win = window(dimensions = [1000, 500])
+    win.refresh, /disable
+
     p1 = plot(wave_spec, spec, xtitle = 'wavelength scale corrected (nm)', title = file_name, $
       ytitle = 'Intensity (arb. units)', current = win, yr = yr, color = 'gray', font_name = 'times', font_size = 12, name = 'Raw Data')
     p2 = plot(wave_spec, spec_significant, color = 'green', /over, name = 'Background Subtracted')
@@ -123,11 +133,14 @@ pro ajello_lab_calibrate_spectrum, arr, $
     markerp, p1, x = 135.4, linestyle = 2, color = 'blue' ; scale aligning point
     markerp, p1, y = 0
     leg = legend(target = [p1, p2, p3], font_size = 9, font_name = 'times', linestyle = 6, /relative, position = [1.1, 1.15], sample_width = 0.1)
-    ; win.save, path_save + file_name + '.png'
+    win.refresh
+
+    if keyword_set(save_data) then $
+      win.save, file_dirname(save_data) + path_sep() + file_name + '.png'
   endif
 
-  if keyword(save_data) then begin
-    path_save = save_data
+  if keyword_set(save_data) then begin
+    path_save = file_dirname(save_data) + path_sep()
     desc = [ $
       'arr: data loaded from savefile, an average, dark-subtracted image in units of DN per readout', $
       'background_slope: slope component for calculating the residual offset value, starting from coords in slope_start', $
@@ -140,9 +153,10 @@ pro ajello_lab_calibrate_spectrum, arr, $
       'wave_spec: shifted wave length spread that matches data', $
       'y1: lower bound of used spatial data', $
       'y2: upper bound of used spatial data']
-    file_name = file_basename(file_data, '.idl')
+    file_name = file_basename(save_data, '.idl')
     save, filename = path_save + file_name + '_Calibrated.idl', arr, y1, y2, spec, $
       wave_spec, wave_shift, spat, spec_cal, background_slope, slope_start, sens, desc
   endif
-  stop
+
+  if n_params() eq 0 then stop
 end

@@ -125,7 +125,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     ; calibrate the data
     ;
     spec_cal = spec / sens
-
+    spec_cal_norm = spec_cal
     stop
   endif
 
@@ -135,8 +135,9 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
   ; ndx_spec_norm = where( wave_spec gt wl1_fit and wave_spec lt wl2_fit )
   ; ndx_lbh_norm = where( wave_lbh gt wl1_fit and wave_lbh lt wl2_fit )
   ; spec_cal_norm = spec_cal / total(spec_cal[ndx_spec_norm]) ;/ mean(deriv(wlfuv))
-  spec_cal_norm = spec_cal
 
+  if n_params() ne 0 then $
+    spec_cal_norm = spec
   ;
   ; ;
   ; ; force the observed data to be positive
@@ -305,13 +306,14 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
 
   if keyword_set(show_plots) then begin
     if keyword_set(save_data) then $
-      file_name = file_basename(save_data, '.idl') else file_name = ''
+      file_name = file_basename(save_data, '.idl') + '_LBH_fitted' else file_name = ''
     yr_ndx = where(wave_spec gt wl1_fit and wave_spec lt wl2_fit)
     yr = [0, max(spec_cal_norm[yr_ndx]) * 1.1]
     lbh_tot = total(model_fit_arr[*, 0 : 6], 2)
     yr1 = [0, max(lbh_tot[yr_ndx]) * 1.3]
 
     win = window(dim = [1900, 800])
+    win.refresh, /disable
     thick = 2
     p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = yr, position = [0.03, 0.53, 0.42, 0.95], title = file_name, $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
@@ -363,7 +365,9 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       title = 'FCF', font_size = 12, font_name = 'times', yr = [0, 0.25], position = [0.71, 0.06, 0.97, 0.48])
     p2 = plot(fcf_deriv, /over, color = 'red', symbol = 'o', /sym_filled, sym_color = 'red', name = 'derived')
     leg = legend(target = [p1, p2], position = [0.8, 0.65], font_name = 'times', font_size = 8, sample_width = 0.1, font_style = 'bold')
-    ; win.save, path_save + file_name + '.png'
+    win.refresh
+    if keyword_set(save_data) then $
+      win.save, file_dirname(save_data) + path_sep() + file_name + '.png'
 
     ; win = window(dim = [1200, 800])
     ; thick = 2
@@ -408,7 +412,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
   endif
 
   if keyword_set(save_data) then begin
-    path_save = save_data
+    path_save = file_dirname(save_data) + path_sep()
     desc = [ $
       'arr_nist: atomic nitrogen emissions added to LBH bands and retrieved from NIST', $
       'fcf_fit: franck-condon factors calculated from lbh fit to data', $
@@ -425,7 +429,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       'waved_lbh: LBH model wavelength scale step size, nm', $
       'wl1_fit: lower bound of wavelength range to consider in fit, nm', $
       'wl2_fit: upper bound of wavelength range to consider in fit, nm']
-    file_name = file_basename(file_data, '.idl')
+    file_name = file_basename(save_data, '.idl')
     save, filename = path_save + file_name + '_LBH_fit.idl', arr_nist, fcf_fit, lbh_temp, lbh, waved_lbh, $
       model_fit_arr, num_atomic, num_band_lbh, param_id, param_fit, spec_fit, spec, wave_spec, wl1_fit, wl2_fit, desc
   endif
