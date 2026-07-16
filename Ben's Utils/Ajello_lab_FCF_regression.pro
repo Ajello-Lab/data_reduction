@@ -1,6 +1,6 @@
 ;+
 ; PURPOSE
-;   Akin to ajello_lab_n2_model_fit with more comprehensive visualization output
+;   Use ajello_lab_n2_model_fit instead
 ;
 ; INPUTS
 ;

@@ -127,6 +127,7 @@ pro ajello_lab_calibrate_spectrum, arr, $
   endif
 
   if keyword(save_data) then begin
+    path_save = save_data
     desc = [ $
       'arr: data loaded from savefile, an average, dark-subtracted image in units of DN per readout', $
       'background_slope: slope component for calculating the residual offset value, starting from coords in slope_start', $
