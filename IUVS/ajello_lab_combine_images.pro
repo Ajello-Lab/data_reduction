@@ -77,19 +77,19 @@ pro add_LBH_ticks, window, yr
     p = plot([wl6[i], wl6[i]], [0.925 * fac, 0.95 * fac], color = 'dark orange', thick = 2, /overplot)
   endfor
   ; v''
-  t = text(145, 0.6 * fac, '0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(150.1, 0.6 * fac, '1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(155.5, 0.6 * fac, '2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(161.2, 0.6 * fac, '3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(167.2, 0.6 * fac, '4 = $\nu^\prime\prime$', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(144.8, 0.6 * fac, '0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(149.9, 0.6 * fac, '1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(155.3, 0.6 * fac, '2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(161.0, 0.6 * fac, '3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(166.6, 0.6 * fac, '4 = $\nu\primeprime$', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
   ; v'
-  t = text(142.0, 0.625 * fac, '$\nu\prime$ = 0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(138.6, 0.675 * fac, '$\nu\prime$ = 1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(135.4, 0.725 * fac, '$\nu\prime$ = 2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(132.4, 0.775 * fac, '$\nu\prime$ = 3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(129.5, 0.825 * fac, '$\nu\prime$ = 4', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(126.9, 0.875 * fac, '$\nu\prime$ = 5', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(124.3, 0.925 * fac, '$\nu\prime$ = 6', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(142.0, 0.623 * fac, '$\nu\prime$ = 0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(138.6, 0.673 * fac, '$\nu\prime$ = 1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(135.4, 0.723 * fac, '$\nu\prime$ = 2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(132.4, 0.773 * fac, '$\nu\prime$ = 3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(129.5, 0.823 * fac, '$\nu\prime$ = 4', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(126.9, 0.873 * fac, '$\nu\prime$ = 5', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(124.3, 0.923 * fac, '$\nu\prime$ = 6', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
   window.refresh
 end
 

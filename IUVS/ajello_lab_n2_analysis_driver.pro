@@ -50,7 +50,7 @@ pro ajello_lab_n2_analysis_driver
 
     save_data = path_save + data_list[i, 0]
     ajello_lab_n2_model_fit, wave_spec_data[0, *], spec_cal_data[0, *], param_fit, $
-      param_id, fcf_fit, model_fit_arr, spec_fit, show_plots = show_plots, save_data = save_data, wl2_fit = 170
+      param_id, fcf_fit, model_fit_arr, spec_fit, show_plots = show_plots, save_data = save_data ; , wl2_fit = 170
 
     print, 'Data fit to LBH lines'
     stop
