@@ -11,7 +11,8 @@
 ;
 ; KEYWORDS
 ;-
-pro ajello_lab_sensitivity_fuv_2026_07, wave_out, sens_out
+pro ajello_lab_sensitivity_fuv_2026_07, wave_out, sens_out, $
+  show_plots=show_plots
 
   ;
   ; if no wavelength vector provided, create one
@@ -41,18 +42,21 @@ pro ajello_lab_sensitivity_fuv_2026_07, wave_out, sens_out
   ;
   sens_out = 10.^( interpol( alog10(sens), wave_sens, wave_out ) )
   
-  if n_params() eq 0 then begin
-    sens2 = interpol( sens, wave_sens, wave_out )
-
-    p1 = plot( wave_sens, sens, /ylog )
-    p2 = plot( wave_out, sens_out, /over, color='red' )
-    p3 = plot( wave_sens, sens, /over, thick=2 )
-    p4 = plot( wave_out, sens2, /over, thick=2, color='blue' )
+  if (n_params() eq 0) or (keyword_set(show_plots)) then begin
     
-    p1 = plot( wave_sens, sens )
+    sens_lin = interpol( sens, wave_sens, wave_out )
+
+    win = window(dim=[800,600])
+    p1 = plot( wave_sens, sens, /ylog, name='original', symbol='o', current=win, layout=[1,2,1], title='sensitivity log' )
+    p2 = plot( wave_out, sens_out, /over, color='red', name='interpol log'  )
+    p3 = plot( wave_sens, sens, /over, thick=2 )
+    p4 = plot( wave_out, sens_lin, /over, thick=2, color='blue', name='interpol linear' )
+    leg = legend(target=[p1,p2,p4])
+    ;
+    p1 = plot( wave_sens, sens, current=win, layout=[1,2,2], title='sensitivity linear' )
     p2 = plot( wave_out, sens_out, /over, color='red' )
     p3 = plot( wave_sens, sens, /over, thick=2, symbol='o', /sym_filled )
-    p4 = plot( wave_out, sens2, /over, thick=2, color='blue' )
+    p4 = plot( wave_out, sens_lin, /over, thick=2, color='blue' )
     
     stop
   endif
