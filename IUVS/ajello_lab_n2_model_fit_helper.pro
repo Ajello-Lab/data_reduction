@@ -8,7 +8,7 @@ pro ajello_lab_n2_model_fit_helper, ndx_spec_peak, spec, model, wave_model, wl1_
   best_so_far = 10000000
   int_of_best = -1
   length = 1000
-  iter_list = dindgen(length) / length / 50 - 0.005
+  iter_list = dindgen(length) / length / 5 - 0.05
   redo:
   for l = 0, n_elements(iter_list) - 1 do begin
     ; retrieve a notional wavelength scale
@@ -25,6 +25,22 @@ pro ajello_lab_n2_model_fit_helper, ndx_spec_peak, spec, model, wave_model, wl1_
     wave_spec += iter_list[l]
     ; wave_spec += 0.009354
 
+    ; Subtract residual background
+    ;
+    ; left_pt = mean(spec[0 : long(0.1 * n_elements(spec))])
+    ; right_pt = mean(spec[long(0.85 * n_elements(spec)) : n_elements(spec) - 1])
+    left_end = 0.05
+    right_begin = 0.95
+    spec_left = spec[0 : long(left_end * n_elements(spec))]
+    spec_right = spec[long(right_begin * n_elements(spec)) : n_elements(spec) - 1]
+    left_ndx = spec_left[sort(spec_left)]
+    right_ndx = spec_right[sort(spec_right)]
+    left_pt = left_ndx[long(0.25 * n_elements(left_ndx))]
+    right_pt = right_ndx[long(0.25 * n_elements(right_ndx))]
+
+    background_slope = (left_pt - right_pt) / (wave_spec[0] - wave_spec[-1])
+    spec_significant = spec - (background_slope * (wave_spec - wave_spec[0]) + left_pt)
+    ; slope_start = [wave_spec[1], left_pt]
     ; p1 = plot( wave_spec, spec, xtitle='wavelength scale corrected (nm)' )
     ; markerp,p1,x=120.0,linestyle=2
 
@@ -36,7 +52,7 @@ pro ajello_lab_n2_model_fit_helper, ndx_spec_peak, spec, model, wave_model, wl1_
     ;
     ; calibrate the data
     ;
-    spec_cal = spec / sens
+    spec_cal = spec_significant / sens
     spec_cal_norm = spec_cal
     ; stop
 

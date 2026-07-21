@@ -50,7 +50,6 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
 
   if n_params() eq 0 then begin
     show_plots = 1
-    save_data = 0
     align_data = 1
 
     ajello_lab_set_paths, path_base, path_repo
@@ -63,8 +62,19 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       end
       'benjamincondit': begin
         ; file_data_helper = '/Users/benjamincondit/Desktop/IUVS_Breadboard/Round 12/data_reduction/'
-        save_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/'
-        file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_30EV_FUV_TEST19_IMAGE1.idl'
+        save_path = '/Users/benjamincondit/Desktop/Data_Reduction copy/'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_30EV_FUV_TEST19_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_9EV_FUV_TEST40_IMAGE1.idl' ; REDO
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_18EV_FUV_TEST38_IMAGE1.idl'
+        file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_11EV_FUV_TEST36_IMAGE1.idl'
+        ; ;file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_14EV_FUV_TEST33_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_20EV_FUV_TEST31_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_16EV_FUV_TEST27_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_9EV_FUV_TEST26_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_10EV_FUV_TEST22_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_100EV_FUV_TEST14_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_12EV_FUV_TEST17_IMAGE1.idl'
+        ; file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_100EV_FUV_TEST11_IMAGE1.idl'
       end
     endcase
 
@@ -72,6 +82,8 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       print, 'data file not found or not defined'
       stop
     endif
+
+    save_data = save_path + file_basename(file_data)
     ;
     ; retrieve LBH model
     ;
@@ -219,6 +231,22 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     ;
     wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 135.44
 
+    ; Subtract residual background
+    ;
+    ; left_pt = mean(spec[0 : long(0.1 * n_elements(spec))])
+    ; right_pt = mean(spec[long(0.85 * n_elements(spec)) : n_elements(spec) - 1])
+    left_end = 0.05
+    right_begin = 0.95
+    spec_left = spec[0 : long(left_end * n_elements(spec))]
+    spec_right = spec[long(right_begin * n_elements(spec)) : n_elements(spec) - 1]
+    left_ndx = spec_left[sort(spec_left)]
+    right_ndx = spec_right[sort(spec_right)]
+    left_pt = left_ndx[long(0.25 * n_elements(left_ndx))]
+    right_pt = right_ndx[long(0.25 * n_elements(right_ndx))]
+
+    background_slope = (left_pt - right_pt) / (wave_spec[0] - wave_spec[-1])
+    spec_significant = spec - (background_slope * (wave_spec - wave_spec[0]) + left_pt)
+
     if keyword_set(align_data) then $
       wave_spec += best
 
@@ -239,7 +267,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     ;
     ; calibrate the data
     ;
-    spec_cal = spec / sens
+    spec_cal = spec_significant / sens
     spec_cal_norm = spec_cal
     ; stop
   endif
@@ -342,7 +370,9 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     win = window(dim = [1900, 800])
     win.refresh, /disable
     thick = 2
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], yr = [1.1 * min(spec_residual[yr_ndx]), max(spec_cal_norm[yr_ndx]) * 1.1], position = [0.04, 0.53, 0.42, 0.95], title = file_name, $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [110, 185], $
+      yr = [1.1 * min(spec_residual[yr_ndx]), max(spec_cal_norm[yr_ndx]) * 1.1], $
+      position = [0.04, 0.53, 0.42, 0.95], title = file_name, $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
     ; p2 = plot( wave_spec_fit, yfit3, color='red', /over )
     p3 = plot(wave_spec, spec_fit, color = 'red', /over)
@@ -353,7 +383,8 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     p5 = plot(wave_spec, spec_residual, color = 'light blue', /over)
     p6 = plot(wave_spec, 0 * wave_spec, color = 'black', /over, linestyle = 5)
 
-    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], yr = [1.1 * min(spec_residual[yr_ndx]), max(lbh_tot[yr_ndx]) * 1.2], position = [0.46, 0.53, 0.68, 0.95], $
+    p1 = plot(wave_spec, spec_cal_norm, current = win, thick = thick, xr = [126.5, 155], $
+      yr = [1.1 * min(spec_residual[yr_ndx]), max(lbh_tot[yr_ndx]) * 1.2], position = [0.46, 0.53, 0.68, 0.95], $
       xtitle = 'Wavelength (nm)', ytitle = 'Intensity (arb. units)', font_name = 'times', font_size = 12)
     ; p2 = plot( wave_spec_fit, yfit3, color='red', /over )
     pf = plot(wave_spec, spec_fit, color = 'red', /over, name = 'Fit Total')
@@ -392,7 +423,7 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
     p1 = plot(fcf_model, current = win, symbol = 'o', /sym_filled, name = 'model', $
       title = 'FCF', font_size = 12, font_name = 'times', yr = [0, 0.25], position = [0.71, 0.06, 0.97, 0.48])
     p2 = errorplot(fcf_fit, fcf_fit_err, /over, color = 'red', symbol = 'o', /sym_filled, sym_color = 'red', name = 'derived')
-    leg = legend(target = [p1, p2], position = [0.8, 0.65], font_name = 'times', font_size = 8, sample_width = 0.1, font_style = 'bold', linestyle = 6)
+    leg = legend(target = [p1, p2], position = [0.9, 0.65], font_name = 'times', font_size = 8, sample_width = 0.1, font_style = 'bold', linestyle = 6)
     win.refresh
     if keyword_set(save_data) then $
       win.save, file_dirname(save_data) + path_sep() + file_name + '.png'
@@ -463,17 +494,24 @@ pro ajello_lab_n2_model_fit, wave_spec, spec, $
       model_fit_arr, num_atomic, num_band_lbh, param_id, param_fit, spec_fit, spec, wave_spec, wl1_fit, wl2_fit, desc
   endif
 
-  spec_modded = [replicate(0.0, 548), spec_cal_norm[548 : 566], replicate(0.0, n_elements(spec_cal_norm) - 565)]
-  spec_fit_modded = [replicate(0.0, 548), spec_fit[548 : 566], replicate(0.0, n_elements(spec_fit) - 565)]
-  modded_wl = findgen(n_elements(spec_modded))
-  gfit = gaussfit(modded_wl, spec_modded, A, nterms = 4)
-  gfit = gaussfit(modded_wl, spec_fit_modded, B, nterms = 4)
+  file_out = path_save + file_basename(save_data, '.idl') + '_FCF.txt'
+  openw, fid, file_out, /get_lun
+  for i = 0, n_elements(fcf_fit) - 1 do $
+    printf, fid, fcf_fit[i], fcf_fit_err[i], format = '(F10.8,",",F10.8)'
+  close, fid
+  free_lun, fid
 
-  print, A
-  print, B
+  ; spec_modded = [replicate(0.0, 548), spec_cal_norm[548 : 566], replicate(0.0, n_elements(spec_cal_norm) - 565)]
+  ; spec_fit_modded = [replicate(0.0, 548), spec_fit[548 : 566], replicate(0.0, n_elements(spec_fit) - 565)]
+  ; modded_wl = findgen(n_elements(spec_modded))
+  ; gfit = gaussfit(modded_wl, spec_modded, A, nterms = 4)
+  ; gfit = gaussfit(modded_wl, spec_fit_modded, B, nterms = 4)
+  ;
+  ; print, A
+  ; print, B
 
-  p1 = plot(wave_spec, spec_cal_norm, xr = [126.5, 155])
-  p2 = plot(wave_spec, spec_fit, /over, color = 'red')
+  ; p1 = plot(wave_spec, spec_cal_norm, xr = [126.5, 155])
+  ; p2 = plot(wave_spec, spec_fit, /over, color = 'red')
   stop
   if n_params() eq 0 then stop
 end

@@ -20,7 +20,8 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
   wave_spec, $
   spec_cal, $
   show_plots = show_plots, $
-  save_data = save_data
+  save_data = save_data, $
+  align_data = align_data
   compile_opt idl2
 
   if n_params() eq 0 then begin
@@ -96,6 +97,7 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
   ; retrieve a notional wavelength scale
   ;
   ajello_lab_pixel_scale_rot, wlfuv, wlmuv, yfuv, ymuv
+  wlfuv *= 1.001570 ; brute force calculation to correct the pixel : nm transition
 
   wave_shift = wlfuv[ndx_spec_peak] + 135.44 ; to be saved
   wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 135.44 ; from Ajello et al. 1985

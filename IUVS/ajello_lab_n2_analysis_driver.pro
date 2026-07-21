@@ -21,7 +21,11 @@ pro ajello_lab_n2_analysis_driver
   endcase
 
   ; in order of Image 1, Image 2, Image 3
-  data_list = ['N2_30EV_FUV_TEST19_IMAGE1.idl', 'N2_30EV_FUV_TEST20_IMAGE2.idl', 'N2_30EV_FUV_TEST21_IMAGE3.idl'] ; ,[,,],[,,],[,,],[,,]]
+  data_list = ['N2_30EV_FUV_TEST19_IMAGE1.idl', 'N2_30EV_FUV_TEST20_IMAGE2.idl', 'N2_30EV_FUV_TEST21_IMAGE3.idl']
+  data_list = ['N2_20EV_FUV_TEST31_IMAGE1.idl', 'N2_20EV_FUV_TEST32_IMAGE2.idl', 'N2_20EV_FUV_TEST30_IMAGE3.idl']
+  data_list = ['N2_14EV_FUV_TEST33_IMAGE1.idl', 'N2_14EV_FUV_TEST34_IMAGE2.idl', 'N2_14EV_FUV_TEST35_IMAGE3.idl']
+  data_list = ['N2_14EV_FUV_TEST33_IMAGE1.idl', 'N2_14EV_FUV_TEST34_IMAGE2.idl', 'N2_14EV_FUV_TEST35_IMAGE3.idl']
+  data_list = ['N2_16EV_FUV_TEST27_IMAGE1.idl', 'N2_16EV_FUV_TEST28_IMAGE2.idl', 'N2_16EV_FUV_TEST29_IMAGE3.idl']
 
   sz = size(data_list, /dim)
   num_data = sz[0]
@@ -49,11 +53,12 @@ pro ajello_lab_n2_analysis_driver
     stop
 
     save_data = path_save + data_list[i, 0]
-    ajello_lab_n2_model_fit, wave_spec_data[0, *], spec_cal_data[0, *], param_fit, $
-      param_id, fcf_fit, model_fit_arr, spec_fit, show_plots = show_plots, save_data = save_data ; , wl2_fit = 170
 
-    print, 'Data fit to LBH lines'
-    stop
+    ; ajello_lab_n2_model_fit, wave_spec_data[0, *], spec_cal_data[0, *], param_fit, $
+    ; param_id, fcf_fit, model_fit_arr, spec_fit, show_plots = show_plots, save_data = save_data ; , wl2_fit = 170
+
+    ; print, 'Data fit to LBH lines'
+    ; stop
 
     ajello_lab_combine_images, wave_spec_data[0, *], spec_cal_data[0, *], wave_spec_data[1, *], $
       spec_cal_data[1, *], wave_spec_data[2, *], spec_cal_data[2, *], $

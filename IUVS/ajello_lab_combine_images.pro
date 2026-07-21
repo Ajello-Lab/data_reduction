@@ -159,10 +159,10 @@ pro ajello_lab_combine_images, wave_spec1, spec_image1, wave_spec2, spec_image2,
     y_ndx = where(wave_spec lt 170 and wave_spec gt 125)
     yr = [0, max(total_spec[y_ndx]) * 2]
     p1 = plot(wave_spec, total_spec, current = win, font_size = 13, xr = xr, yr = yr, title = file_name, name = 'IUVS Total Spectrum', $
-      xtitle = 'Wavelength (nm)', ytitle = 'Relative Calibrated Intensity [arb units]', font_name = 'times', linestyle = 2)
-    p2 = plot(wave_spec, spec_image1, /over, color = 'blue', name = 'IUVS Image 1')
-    p3 = plot(wave_spec, spec2_interp, /over, color = 'red', name = 'IUVS Image 2')
-    p4 = plot(wave_spec, spec3_interp, /over, color = 'green', name = 'IUVS Image 3')
+      xtitle = 'Wavelength (nm)', ytitle = 'Relative Calibrated Intensity [arb units]', font_name = 'times', linestyle = 1, thick = 2)
+    p2 = plot(wave_spec, spec_image1, /over, color = 'blue', name = 'IUVS Image 1', thick = 2)
+    p3 = plot(wave_spec, spec2_interp, /over, color = 'red', name = 'IUVS Image 2', thick = 2)
+    p4 = plot(wave_spec, spec3_interp, /over, color = 'green', name = 'IUVS Image 3', thick = 2)
     leg = legend(target = [p1, p2, p3, p4], position = [0.98, 0.5], /relative, linestyle = 6, font_name = 'times')
     win.refresh
     add_LBH_ticks, win, yr
