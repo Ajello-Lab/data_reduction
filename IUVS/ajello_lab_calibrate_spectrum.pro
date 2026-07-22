@@ -20,11 +20,13 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
   wave_spec, $
   spec_cal, $
   show_plots = show_plots, $
-  save_data = save_data
+  save_data = save_data, $
+  align_data = align_data
   compile_opt idl2
 
   if n_params() eq 0 then begin
     show_plots = 1
+    save_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_16EV_FUV_TEST27_IMAGE1.idl'
     ajello_lab_set_paths, path_base, path_repo
 
     case (get_login_info()).user_name of
@@ -36,14 +38,14 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
       end
       'benjamincondit': begin
         ; file_data_helper = '/Users/benjamincondit/Desktop/IUVS_Breadboard/Round 12/data_reduction/'
-        path_save = '/Users/benjamincondit/Desktop/Data_Reduction_copy/'
-        file_data = '/Users/benjamincondit/Desktop/Data_Reduction_copy/'
+        path_save = '/Users/benjamincondit/Desktop/Data_Reduction copy/'
+        file_data = '/Users/benjamincondit/Desktop/Data_Reduction copy/N2_16EV_FUV_TEST27_IMAGE1.idl'
         file_model = path_repo + 'data/N2/n2_lbh_rot_293K.sav'
       end
     endcase
 
-    ; file_names = ['']
-    folder_searcher, file_path, '.idl', 'FUV', file_names, keyword_2 = 'N2'
+    ; file_name = ['']
+    ; folder_searcher, file_path, '.idl', 'FUV', file_names, keyword_2 = 'N2'
 
     if file_test(file_model) eq 0 then begin
       print, 'model file not found or not defined'
@@ -86,27 +88,37 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
 
   spec = total(arr[*, y1 : y2], 2, /nan) ; for rotated image
 
-  spec_modded = spec
-  spec_modded[0 : 330] = 0
-  spec_modded[360 : n_elements(spec_modded) - 1] = 0
-  ndx_spec_peak = findndx(spec_modded, max(spec_modded))
+  spec_modded = [replicate(0.0, 336), spec[336 : 358], replicate(0.0, n_elements(spec) - 359)]
+  modded_wl = findgen(n_elements(spec_modded))
+  gfit = gaussfit(modded_wl, spec_modded, A, nterms = 4)
+  ndx_spec_peak = (where(gfit eq max(gfit)))[0]
 
   ;
   ; retrieve a notional wavelength scale
   ;
   ajello_lab_pixel_scale_rot, wlfuv, wlmuv, yfuv, ymuv
+  wlfuv *= 1.001570 ; brute force calculation to correct the pixel : nm transition
 
-  wave_shift = wlfuv[ndx_spec_peak] + 135.4 ; to be saved
-  wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 135.4
+  wave_shift = wlfuv[ndx_spec_peak] + 135.44 ; to be saved
+  wave_spec = wlfuv - wlfuv[ndx_spec_peak] + 135.44 ; from Ajello et al. 1985
   ; print, ndx_spec_peak
 
   ; Subtract residual background
   ;
-  spec_left = mean(spec[0 : long(0.1 * n_elements(spec))])
-  spec_right = mean(spec[long(0.9 * n_elements(spec)) : n_elements(spec) - 1])
-  background_slope = (spec_right - spec_left) / (wave_spec[long(0.95 * n_elements(wave_spec))] - wave_spec[long(0.05 * n_elements(wave_spec))])
-  spec_significant = spec - (background_slope * (wave_spec - wave_spec[long(0.05 * n_elements(wave_spec))]) + spec_left)
-  slope_start = [wave_spec[long(0.05 * n_elements(wave_spec))], spec_left]
+  ; left_pt = mean(spec[0 : long(0.1 * n_elements(spec))])
+  ; right_pt = mean(spec[long(0.85 * n_elements(spec)) : n_elements(spec) - 1])
+  left_end = 0.05
+  right_begin = 0.95
+  spec_left = spec[0 : long(left_end * n_elements(spec))]
+  spec_right = spec[long(right_begin * n_elements(spec)) : n_elements(spec) - 1]
+  left_ndx = spec_left[sort(spec_left)]
+  right_ndx = spec_right[sort(spec_right)]
+  left_pt = left_ndx[long(0.25 * n_elements(left_ndx))]
+  right_pt = right_ndx[long(0.25 * n_elements(right_ndx))]
+
+  background_slope = (left_pt - right_pt) / (wave_spec[0] - wave_spec[-1])
+  spec_significant = spec - (background_slope * (wave_spec - wave_spec[0]) + left_pt)
+  slope_start = [wave_spec[1], left_pt]
 
   ;
   ; retrieve sensitivity
@@ -125,13 +137,16 @@ pro ajello_lab_calibrate_spectrum, arr, image_type, $
     win = window(dimensions = [1000, 500])
     win.refresh, /disable
 
-    p1 = plot(wave_spec, spec, xtitle = 'wavelength scale corrected (nm)', title = file_name, $
+    p1 = plot(wave_spec, spec, xtitle = 'Wavelength Scale Corrected (nm)', title = file_name, $
       ytitle = 'Intensity (arb. units)', current = win, yr = yr, color = 'gray', font_name = 'times', font_size = 12, name = 'Raw Data')
     p2 = plot(wave_spec, spec_significant, color = 'green', /over, name = 'Background Subtracted')
     p3 = plot(wave_spec, spec_cal, color = 'purple', /over, name = 'Calibrated')
+    p4 = plot(wave_spec, background_slope * (wave_spec - wave_spec[0]) + left_pt, color = 'pink', /over, name = 'Background slope')
     markerp, p1, x = 120.0, linestyle = 2, color = 'red' ; 120nm feature
     markerp, p1, x = 135.4, linestyle = 2, color = 'blue' ; scale aligning point
     markerp, p1, y = 0
+    markerp, p1, x = wave_spec[long(left_end * n_elements(spec))]
+    markerp, p1, x = wave_spec[long(right_begin * n_elements(spec))]
     leg = legend(target = [p1, p2, p3], font_size = 9, font_name = 'times', linestyle = 6, /relative, position = [1.1, 1.15], sample_width = 0.1)
     win.refresh
 

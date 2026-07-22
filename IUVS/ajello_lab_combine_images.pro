@@ -77,19 +77,19 @@ pro add_LBH_ticks, window, yr
     p = plot([wl6[i], wl6[i]], [0.925 * fac, 0.95 * fac], color = 'dark orange', thick = 2, /overplot)
   endfor
   ; v''
-  t = text(145, 0.6 * fac, '0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(150.1, 0.6 * fac, '1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(155.5, 0.6 * fac, '2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(161.2, 0.6 * fac, '3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(167.2, 0.6 * fac, '4 = $\nu^\prime\prime$', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(144.8, 0.6 * fac, '0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(149.9, 0.6 * fac, '1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(155.3, 0.6 * fac, '2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(161.0, 0.6 * fac, '3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(166.6, 0.6 * fac, '4 = $\nu\primeprime$', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
   ; v'
-  t = text(142.0, 0.625 * fac, '$\nu\prime$ = 0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(138.6, 0.675 * fac, '$\nu\prime$ = 1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(135.4, 0.725 * fac, '$\nu\prime$ = 2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(132.4, 0.775 * fac, '$\nu\prime$ = 3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(129.5, 0.825 * fac, '$\nu\prime$ = 4', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(126.9, 0.875 * fac, '$\nu\prime$ = 5', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
-  t = text(124.3, 0.925 * fac, '$\nu\prime$ = 6', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(142.0, 0.623 * fac, '$\nu\prime$ = 0', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(138.6, 0.673 * fac, '$\nu\prime$ = 1', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(135.4, 0.723 * fac, '$\nu\prime$ = 2', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(132.4, 0.773 * fac, '$\nu\prime$ = 3', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(129.5, 0.823 * fac, '$\nu\prime$ = 4', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(126.9, 0.873 * fac, '$\nu\prime$ = 5', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
+  t = text(124.3, 0.923 * fac, '$\nu\prime$ = 6', color = 'orange red', font_size = 11, font_name = 'times', target = win, /data)
   window.refresh
 end
 
@@ -159,10 +159,10 @@ pro ajello_lab_combine_images, wave_spec1, spec_image1, wave_spec2, spec_image2,
     y_ndx = where(wave_spec lt 170 and wave_spec gt 125)
     yr = [0, max(total_spec[y_ndx]) * 2]
     p1 = plot(wave_spec, total_spec, current = win, font_size = 13, xr = xr, yr = yr, title = file_name, name = 'IUVS Total Spectrum', $
-      xtitle = 'Wavelength (nm)', ytitle = 'Relative Calibrated Intensity [arb units]', font_name = 'times', linestyle = 2)
-    p2 = plot(wave_spec, spec_image1, /over, color = 'blue', name = 'IUVS Image 1')
-    p3 = plot(wave_spec, spec2_interp, /over, color = 'red', name = 'IUVS Image 2')
-    p4 = plot(wave_spec, spec3_interp, /over, color = 'green', name = 'IUVS Image 3')
+      xtitle = 'Wavelength (nm)', ytitle = 'Relative Calibrated Intensity [arb units]', font_name = 'times', linestyle = 1, thick = 2)
+    p2 = plot(wave_spec, spec_image1, /over, color = 'blue', name = 'IUVS Image 1', thick = 2)
+    p3 = plot(wave_spec, spec2_interp, /over, color = 'red', name = 'IUVS Image 2', thick = 2)
+    p4 = plot(wave_spec, spec3_interp, /over, color = 'green', name = 'IUVS Image 3', thick = 2)
     leg = legend(target = [p1, p2, p3, p4], position = [0.98, 0.5], /relative, linestyle = 6, font_name = 'times')
     win.refresh
     add_LBH_ticks, win, yr
